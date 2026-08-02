@@ -13,7 +13,7 @@
         android:icon="@android:drawable/ic_menu_manage"
         android:title="API Keys" />
     <item android:id="@+id/nav_oauth"
-        android:icon="@android:drawable/ic_menu_login"
+        android:icon="@android:drawable/ic_menu_compass"
         android:title="OAuth" />
     <item android:id="@+id/nav_usage"
         android:icon="@android:drawable/ic_menu_gallery"
@@ -22,6 +22,6 @@
         android:icon="@android:drawable/ic_menu_recent_history"
         android:title="Logs" />
     <item android:id="@+id/nav_agent"
-        android:icon="@android:drawable/ic_menu_compass"
+        android:icon="@android:drawable/ic_menu_send"
         android:title="Agent" />
 </menu>

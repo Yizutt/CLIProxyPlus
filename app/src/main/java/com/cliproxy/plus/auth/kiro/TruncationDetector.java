@@ -425,7 +425,9 @@ public class TruncationDetector {
         }
 
         // 递归检查嵌套对象
-        for (String key : json.keySet()) {
+        java.util.Iterator<String> jsonKeys = json.keys();
+        while (jsonKeys.hasNext()) {
+            String key = jsonKeys.next();
             try {
                 Object value = json.get(key);
                 if (value instanceof JSONObject) {

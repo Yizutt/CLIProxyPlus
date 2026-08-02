@@ -3,8 +3,8 @@ package com.cliproxy.plus.agent;
 import android.util.Log;
 
 import com.cliproxy.plus.agent.llm.LLMClient;
-import com.cliproxy.plus.agent.tool.ToolRegistry;
-import com.cliproxy.plus.agent.tool.ToolExecutionResult;
+import com.cliproxy.plus.agent.ToolRegistry;
+import com.cliproxy.plus.agent.tools.ToolExecutionResult;
 
 import org.json.JSONArray;
 import org.json.JSONObject;

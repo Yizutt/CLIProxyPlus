@@ -270,7 +270,9 @@ public class UsageEndpoints {
             // 合并各模型统计
             if (importData.has("models")) {
                 JSONObject models = importData.getJSONObject("models");
-                for (String model : models.keySet()) {
+                java.util.Iterator<String> modelKeys = models.keys();
+                while (modelKeys.hasNext()) {
+                    String model = modelKeys.next();
                     long count = models.optLong(model, 0);
                     usageStats.computeIfAbsent(model, k -> new AtomicLong(0))
                             .addAndGet(count);

@@ -34,6 +34,9 @@ public class ManagementServer {
 
     private static final String TAG = "ManagementServer";
 
+    // 服务启动时间戳（毫秒）
+    private static final long START_TIME = System.currentTimeMillis();
+
     // API 前缀常量
     private static final String PREFIX = "/v0/management";
 
@@ -2477,7 +2480,7 @@ public class ManagementServer {
      * @return 运行时间字符串
      */
     private String getUptime() {
-        long uptime = java.lang.management.ManagementFactory.getRuntimeMXBean().getUptime();
+        long uptime = System.currentTimeMillis() - START_TIME;
         long seconds = uptime / 1000;
         long minutes = seconds / 60;
         long hours = minutes / 60;

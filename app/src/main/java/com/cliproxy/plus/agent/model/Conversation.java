@@ -280,7 +280,9 @@ public class Conversation {
             Map<String, Object> metadata = new HashMap<String, Object>();
             JSONObject metaJson = json.optJSONObject("metadata");
             if (metaJson != null) {
-                for (String key : metaJson.keySet()) {
+                java.util.Iterator<String> metaKeys = metaJson.keys();
+                while (metaKeys.hasNext()) {
+                    String key = metaKeys.next();
                     Object value = metaJson.opt(key);
                     if (value != null && !JSONObject.NULL.equals(value)) {
                         metadata.put(key, value);

@@ -14,22 +14,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * FormatTranslator - 协议格式转换器接口
- * 每种格式转换的逻辑封装在实现类中
- */
-public interface FormatTranslator {
-
-    /**
-     * 将 JSON 请求体从源格式转换为目标格式
-     *
-     * @param jsonBody 原始请求体 JSON 字符串
-     * @param headers  请求头信息
-     * @return 转换后的 JSON 字符串
-     */
-    String translate(String jsonBody, Map<String, String> headers);
-}
-
-/**
  * TranslatorEngine - 协议翻译引擎
  * 管理源协议到目标协议的格式转换器注册与调度
  * 采用注册表模式，支持动态注册和查询格式转换器

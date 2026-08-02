@@ -493,7 +493,7 @@ public class GeminiOAuth extends OAuthProvider {
                 serverSocket.setReuseAddress(true);
                 serverSocket.bind(new InetSocketAddress("localhost", port));
                 running = true;
-                log("Gemini OAuth callback server started on port " + port);
+                Log.d(TAG, "Gemini OAuth callback server started on port " + port);
             } catch (IOException e) {
                 throw new OAuthException("server_start_failed",
                         "Failed to start OAuth callback server on port " + port
@@ -525,7 +525,7 @@ public class GeminiOAuth extends OAuthProvider {
                     continue;
                 } catch (IOException e) {
                     if (running) {
-                        logError("Callback server accept error", e);
+                        Log.e(TAG, "Callback server accept error", e);
                     }
                     // 尝试继续等待
                     try {
@@ -601,7 +601,7 @@ public class GeminiOAuth extends OAuthProvider {
             }
 
             String rawRequest = baos.toString("UTF-8");
-            log("Received callback request: " + requestLine);
+            Log.d(TAG, "Received callback request: " + requestLine);
 
             // 解析请求行: GET /auth/callback?code=xxx&state=yyy HTTP/1.1
             String[] parts = requestLine.toString().split(" ");
@@ -670,10 +670,10 @@ public class GeminiOAuth extends OAuthProvider {
                 try {
                     serverSocket.close();
                 } catch (IOException e) {
-                    logError("Error closing callback server", e);
+                    Log.e(TAG, "Error closing callback server", e);
                 }
             }
-            log("Gemini OAuth callback server stopped");
+            Log.d(TAG, "Gemini OAuth callback server stopped");
         }
 
         public boolean isRunning() {

@@ -243,7 +243,9 @@ public final class AuthTools {
             // 处理元数据
             JSONObject metadata = params.optJSONObject("metadata");
             if (metadata != null) {
-                for (String key : metadata.keySet()) {
+                java.util.Iterator<String> metaKeys = metadata.keys();
+                while (metaKeys.hasNext()) {
+                    String key = metaKeys.next();
                     credential.metadata.put(key, metadata.optString(key, ""));
                 }
             }

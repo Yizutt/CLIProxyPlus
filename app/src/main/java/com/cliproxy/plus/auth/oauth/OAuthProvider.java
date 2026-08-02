@@ -26,6 +26,43 @@ public abstract class OAuthProvider {
 
     protected static final String TAG = "OAuthProvider";
 
+    // 提供商名称
+    protected final String providerName;
+    // OAuth 端点
+    protected final String authUrl;
+    protected final String tokenUrl;
+    protected final String clientId;
+    protected final String redirectUri;
+
+    /**
+     * 默认构造器
+     */
+    public OAuthProvider() {
+        this.providerName = "";
+        this.authUrl = "";
+        this.tokenUrl = "";
+        this.clientId = "";
+        this.redirectUri = "";
+    }
+
+    /**
+     * 5 参数构造器
+     *
+     * @param providerName 提供商名称
+     * @param authUrl      授权端点 URL
+     * @param tokenUrl     令牌端点 URL
+     * @param clientId     客户端 ID
+     * @param redirectUri  重定向 URI
+     */
+    public OAuthProvider(String providerName, String authUrl, String tokenUrl,
+                         String clientId, String redirectUri) {
+        this.providerName = providerName;
+        this.authUrl = authUrl;
+        this.tokenUrl = tokenUrl;
+        this.clientId = clientId;
+        this.redirectUri = redirectUri;
+    }
+
     /**
      * PKCE 码对，包含 code_verifier 和 code_challenge（S256）
      */
@@ -143,21 +180,6 @@ public abstract class OAuthProvider {
             conn.disconnect();
         }
     }
-
-    /**
-     * 启动 OAuth Authorization Code 流程
-     *
-     * @return 认证结果（含 token 信息）
-     */
-    public abstract AuthResult startAuth() throws OAuthException;
-
-    /**
-     * 刷新 Access Token
-     *
-     * @param refreshToken 刷新令牌
-     * @return 新的 Token 数据
-     */
-    public abstract TokenData refreshTokens(String refreshToken) throws OAuthException;
 
     protected void log(String msg) {
         Log.d(TAG, msg);

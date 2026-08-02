@@ -8,8 +8,7 @@ import android.view.MenuItem;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.cliproxy.plus.R;
@@ -56,15 +55,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupViewPager() {
-        adapter = new ViewPagerAdapter(getSupportFragmentManager(), getLifecycle());
-        adapter.addFragment(new DashboardFragment(), "Dashboard");
-        adapter.addFragment(new ConfigFragment(), "Config");
-        adapter.addFragment(new AuthFragment(), "Auth Files");
-        adapter.addFragment(new APIKeysFragment(), "API Keys");
-        adapter.addFragment(new OAuthFragment(), "OAuth");
-        adapter.addFragment(new UsageFragment(), "Usage");
-        adapter.addFragment(new LogsFragment(), "Logs");
-        adapter.addFragment(new AgentFragment(), "Agent");
+        adapter = new ViewPagerAdapter(this);
+        adapter.addFragment(new DashboardFragment());
+        adapter.addFragment(new ConfigFragment());
+        adapter.addFragment(new AuthFragment());
+        adapter.addFragment(new APIKeysFragment());
+        adapter.addFragment(new OAuthFragment());
+        adapter.addFragment(new UsageFragment());
+        adapter.addFragment(new LogsFragment());
+        adapter.addFragment(new AgentFragment());
 
         viewPager.setAdapter(adapter);
         viewPager.setOffscreenPageLimit(1);
@@ -124,35 +123,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * ViewPager2 适配器
+     * ViewPager2 适配器（使用 FragmentStateAdapter）
      */
-    static class ViewPagerAdapter extends FragmentPagerAdapter {
+    static class ViewPagerAdapter extends FragmentStateAdapter {
         private final List<Fragment> fragments = new ArrayList<>();
-        private final List<String> titles = new ArrayList<>();
 
-        public ViewPagerAdapter(FragmentManager fm, androidx.lifecycle.Lifecycle lifecycle) {
-            super(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
+        public ViewPagerAdapter(MainActivity activity) {
+            super(activity);
         }
 
-        public void addFragment(Fragment fragment, String title) {
+        public void addFragment(Fragment fragment) {
             fragments.add(fragment);
-            titles.add(title);
         }
 
         @NonNull
         @Override
-        public Fragment getItem(int position) {
+        public Fragment createFragment(int position) {
             return fragments.get(position);
         }
 
         @Override
-        public int getCount() {
+        public int getItemCount() {
             return fragments.size();
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-            return titles.get(position);
         }
     }
 }

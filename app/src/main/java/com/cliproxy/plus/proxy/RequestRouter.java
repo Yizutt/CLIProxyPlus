@@ -1,8 +1,12 @@
 package com.cliproxy.plus.proxy;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import fi.iki.elonen.NanoHTTPD;
+import fi.iki.elonen.NanoHTTPD.Response;
 
 import com.cliproxy.plus.proxy.handlers.OpenAIHandler;
 import com.cliproxy.plus.proxy.middleware.AuthMiddleware;
@@ -19,33 +23,25 @@ public class RequestRouter {
 
     // 协议识别常量
     private static final String PREFIX_OPENAI = "/v1/chat/completions";
-    private static final String PREFIX_OPENAI_COMPLETIONS = "/v1/completions";
     private static final String PREFIX_OPENAI_MODELS = "/v1/models";
-    private static final String PREFIX_OPENAI_IMAGES = "/v1/images";
-    private static final String PREFIX_OPENAI_RESPONSES = "/v1/responses";
-    private static final String PREFIX_OPENAI_VIDEOS = "/v1/videos";
     private static final String PREFIX_CLAUDE = "/v1/messages";
     private static final String PREFIX_GEMINI = "/v1beta";
     private static final String PREFIX_CODEX = "/backend-api/codex";
     private static final String PREFIX_OPENAI_VIDEOS = "/openai/v1/videos";
-    private static final String PREFIX_LIVE = "/v1/live";
-    private static final String PREFIX_REALTIME = "/v1/realtime";
-    private static final String PREFIX_ALPHA_SEARCH = "/v1/alpha/search";
     private static final String PREFIX_MANAGEMENT = "/v0/management";
-    private static final String PREFIX_HEALTH = "/healthz";
 
     public RequestRouter() {
         this.openAIHandler = new OpenAIHandler();
         this.authMiddleware = new AuthMiddleware();
     }
 
-    public NanoHTTPD.Response dispatch(NanoHTTPD.Method method, String uri,
+    public Response dispatch(NanoHTTPD.Method method, String uri,
                                         Map<String, String> headers,
                                         Map<String, String> params,
                                         String queryString, String body) {
 
         // 健康检查
-        if (uri.equals(PREFIX_HEALTH) || uri.equals("/health")) {
+        if (uri.equals("/healthz") || uri.equals("/health")) {
             return jsonResponse(200, "{\"status\":\"ok\",\"version\":\"6.9.45\"}");
         }
 
@@ -72,19 +68,19 @@ public class RequestRouter {
 
         // 其他协议暂存
         if (uri.equals(PREFIX_CLAUDE) || uri.startsWith(PREFIX_CLAUDE)) {
-            return handleClaudeMessage(method, headers, body);
+            return jsonResponse(501, "{\"error\":\"Claude handler not yet implemented\"}");
         }
 
         if (uri.startsWith(PREFIX_GEMINI)) {
-            return handleGeminiRequest(method, uri, headers, body);
+            return jsonResponse(501, "{\"error\":\"Gemini handler not yet implemented\"}");
         }
 
         if (uri.startsWith(PREFIX_CODEX)) {
-            return handleCodexRequest(method, uri, headers, body);
+            return jsonResponse(501, "{\"error\":\"Codex handler not yet implemented\"}");
         }
 
         if (uri.startsWith(PREFIX_OPENAI_VIDEOS)) {
-            return handleVideoRequest(method, uri, headers, body);
+            return jsonResponse(501, "{\"error\":\"Video handler not yet implemented\"}");
         }
 
         // 默认：返回根信息
@@ -95,33 +91,13 @@ public class RequestRouter {
         return jsonResponse(404, "{\"error\":\"Not Found\"}");
     }
 
-    private NanoHTTPD.Response handleOpenAIChat(NanoHTTPD.Method method, Map<String, String> headers, String body) {
-        // 暂存 - 等待 OpenAIHandler 实现
-        return jsonResponse(501, "{\"error\":\"OpenAI handler not yet implemented\"}");
-    }
-
-    private NanoHTTPD.Response handleClaudeMessage(NanoHTTPD.Method method, Map<String, String> headers, String body) {
-        return jsonResponse(501, "{\"error\":\"Claude handler not yet implemented\"}");
-    }
-
-    private NanoHTTPD.Response handleGeminiRequest(NanoHTTPD.Method method, String uri, Map<String, String> headers, String body) {
-        return jsonResponse(501, "{\"error\":\"Gemini handler not yet implemented\"}");
-    }
-
-    private NanoHTTPD.Response handleCodexRequest(NanoHTTPD.Method method, String uri, Map<String, String> headers, String body) {
-        return jsonResponse(501, "{\"error\":\"Codex handler not yet implemented\"}");
-    }
-
-    private NanoHTTPD.Response handleVideoRequest(NanoHTTPD.Method method, String uri, Map<String, String> headers, String body) {
-        return jsonResponse(501, "{\"error\":\"Video handler not yet implemented\"}");
-    }
-
     /**
      * 创建 JSON 响应
      */
-    public static NanoHTTPD.Response jsonResponse(int statusCode, String json) {
-        NanoHTTPD.Response.Status status = NanoHTTPD.Response.Status.lookup(statusCode);
-        NanoHTTPD.Response response = new NanoHTTPD.Response(status, "application/json", json);
+    public static Response jsonResponse(int statusCode, String json) {
+        Response.Status status = Response.Status.lookup(statusCode);
+        InputStream in = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+        Response response = Response.newChunkedResponse(status, "application/json", in);
         response.addHeader("Access-Control-Allow-Origin", "*");
         response.addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
         response.addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -131,8 +107,9 @@ public class RequestRouter {
     /**
      * 创建 SSE 流式响应
      */
-    public static NanoHTTPD.Response sseResponse(String initialData) {
-        NanoHTTPD.Response response = NanoHTTPD.newChunkedResponse(NanoHTTPD.Response.Status.OK, "text/event-stream", null);
+    public static Response sseResponse(String initialData) {
+        InputStream in = new ByteArrayInputStream(initialData.getBytes(StandardCharsets.UTF_8));
+        Response response = Response.newChunkedResponse(Response.Status.OK, "text/event-stream", in);
         response.addHeader("Cache-Control", "no-cache");
         response.addHeader("Connection", "keep-alive");
         response.addHeader("Access-Control-Allow-Origin", "*");

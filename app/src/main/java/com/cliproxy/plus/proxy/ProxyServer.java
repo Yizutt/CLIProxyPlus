@@ -3,7 +3,6 @@ package com.cliproxy.plus.proxy;
 import android.util.Log;
 
 import java.io.IOException;
-import java.util.Map;
 
 import fi.iki.elonen.NanoHTTPD;
 
@@ -23,15 +22,11 @@ public class ProxyServer extends NanoHTTPD {
     public ProxyServer() {
         super(DEFAULT_PORT);
         this.router = new RequestRouter();
-        setTempFileManagerFactory(new DefaultTempFileManagerFactory());
-        setAsyncRunner(new DefaultAsyncRunner());
     }
 
     public ProxyServer(int port) {
         super(port);
         this.router = new RequestRouter();
-        setTempFileManagerFactory(new DefaultTempFileManagerFactory());
-        setAsyncRunner(new DefaultAsyncRunner());
     }
 
     @Override
@@ -56,18 +51,12 @@ public class ProxyServer extends NanoHTTPD {
             Log.w(TAG, "Failed to parse body: " + e.getMessage());
         }
 
-        // 健康检查
-        if (uri.equals("/healthz") || uri.equals("/health")) {
-            return newFixedLengthResponse(Response.Status.OK, "application/json",
-                    "{\"status\":\"ok\",\"version\":\"6.9.45\"}");
-        }
-
         // 路由到对应处理器
         try {
             return router.dispatch(method, uri, headers, params, queryString, body);
         } catch (Exception e) {
             Log.e(TAG, "Request failed: " + uri, e);
-            return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "application/json",
+            return RequestRouter.jsonResponse(500,
                     "{\"error\":\"" + e.getMessage() + "\"}");
         }
     }
@@ -99,10 +88,5 @@ public class ProxyServer extends NanoHTTPD {
 
     public int getPort() {
         return getListeningPort();
-    }
-
-    public void setPort(int port) {
-        // 重启时使用新端口
-        // 实际实现中需要停止后重新创建
     }
 }

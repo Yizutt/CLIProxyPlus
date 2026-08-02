@@ -3,23 +3,24 @@ package com.cliproxy.plus.proxy.handlers;
 import android.util.Log;
 
 import com.cliproxy.plus.auth.AuthManager;
-import com.google.gson.Gson;
+import com.cliproxy.plus.proxy.RequestRouter;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import fi.iki.elonen.NanoHTTPD;
+import fi.iki.elonen.NanoHTTPD.Response;
 import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
-import okio.BufferedSource;
 
 /**
  * OpenAIHandler - 处理 /v1/chat/completions 等 OpenAI 兼容请求
@@ -29,7 +30,6 @@ import okio.BufferedSource;
 public class OpenAIHandler {
 
     private static final String TAG = "OpenAIHandler";
-    private static final Gson gson = new Gson();
 
     private final OkHttpClient httpClient;
 
@@ -44,18 +44,14 @@ public class OpenAIHandler {
     /**
      * 处理 OpenAI 聊天完成请求
      */
-    public NanoHTTPD.Response handleChatCompletion(Map<String, String> headers, String body) {
+    public Response handleChatCompletion(Map<String, String> headers, String body) {
         if (body == null || body.isEmpty()) {
-            return jsonResponse(400, "{\"error\":{\"message\":\"Empty request body\"}}");
+            return RequestRouter.jsonResponse(400, "{\"error\":{\"message\":\"Empty request body\"}}");
         }
 
         try {
             JsonObject requestObj = JsonParser.parseString(body).getAsJsonObject();
-
-            // 检查是否流式
             boolean stream = requestObj.has("stream") && requestObj.get("stream").getAsBoolean();
-
-            // 获取模型
             String model = requestObj.has("model") ? requestObj.get("model").getAsString() : "gpt-4";
 
             // 选择上游账号
@@ -75,17 +71,16 @@ public class OpenAIHandler {
 
         } catch (Exception e) {
             Log.e(TAG, "Failed to handle chat completion", e);
-            return jsonResponse(500, "{\"error\":{\"message\":\"Internal error: " +
-                    e.getMessage() + "\"}}");
+            return RequestRouter.jsonResponse(500,
+                    "{\"error\":{\"message\":\"Internal error: " + e.getMessage() + "\"}}");
         }
     }
 
     /**
      * 未配置账号时返回模拟响应（用于测试）
      */
-    private NanoHTTPD.Response handleNoCredential(String model, boolean stream) {
+    private Response handleNoCredential(String model, boolean stream) {
         if (stream) {
-            // 流式模拟响应
             String response = "data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\"," +
                     "\"model\":\"" + model + "\",\"choices\":[{\"index\":0," +
                     "\"delta\":{\"role\":\"assistant\"},\"finish_reason\":null}]}\n\n" +
@@ -97,20 +92,25 @@ public class OpenAIHandler {
                     "\"model\":\"" + model + "\",\"choices\":[{\"index\":0," +
                     "\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n" +
                     "data: [DONE]\n\n";
-            return sseResponse(response);
+            InputStream in = new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8));
+            Response resp = Response.newChunkedResponse(Response.Status.OK, "text/event-stream", in);
+            resp.addHeader("Cache-Control", "no-cache");
+            resp.addHeader("Connection", "keep-alive");
+            resp.addHeader("Access-Control-Allow-Origin", "*");
+            return resp;
         } else {
             String response = "{\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion\"," +
                     "\"model\":\"" + model + "\",\"choices\":[{\"index\":0," +
                     "\"message\":{\"role\":\"assistant\",\"content\":\"Hello from CLIProxy Plus! " +
                     "No upstream configured.\"},\"finish_reason\":\"stop\"}]}";
-            return jsonResponse(200, response);
+            return RequestRouter.jsonResponse(200, response);
         }
     }
 
     /**
      * 代理到上游 API
      */
-    private NanoHTTPD.Response proxyToUpstream(AuthManager.AuthCredential credential,
+    private Response proxyToUpstream(AuthManager.AuthCredential credential,
                                                 String model, String body, boolean stream) {
         try {
             String upstreamUrl = determineUpstreamUrl(credential);
@@ -128,52 +128,37 @@ public class OpenAIHandler {
             Call call = httpClient.newCall(upstreamRequest);
 
             if (stream) {
-                // 流式转发
                 Response upstreamResponse = call.execute();
                 return streamUpstreamResponse(upstreamResponse);
             } else {
-                // 非流式转发
-                try (Response upstreamResponse = call.execute()) {
+                try (okhttp3.Response upstreamResponse = call.execute()) {
                     String responseBody = upstreamResponse.body() != null ?
                             upstreamResponse.body().string() : "{}";
-                    return jsonResponse(upstreamResponse.code(), responseBody);
+                    return RequestRouter.jsonResponse(upstreamResponse.code(), responseBody);
                 }
             }
 
         } catch (IOException e) {
             Log.e(TAG, "Upstream request failed", e);
-            return jsonResponse(502, "{\"error\":{\"message\":\"Upstream request failed: " +
-                    e.getMessage() + "\"}}");
+            return RequestRouter.jsonResponse(502,
+                    "{\"error\":{\"message\":\"Upstream request failed: " + e.getMessage() + "\"}}");
         }
     }
 
-    private NanoHTTPD.Response streamUpstreamResponse(Response upstreamResponse) throws IOException {
-        ResponseBody responseBody = upstreamResponse.body();
+    private Response streamUpstreamResponse(okhttp3.Response upstreamResponse) throws IOException {
+        okhttp3.ResponseBody responseBody = upstreamResponse.body();
         if (responseBody == null) {
-            return jsonResponse(502, "{\"error\":{\"message\":\"Empty upstream response\"}}");
+            return RequestRouter.jsonResponse(502, "{\"error\":{\"message\":\"Empty upstream response\"}}");
         }
 
-        BufferedSource source = responseBody.source();
-        NanoHTTPD.Response response = NanoHTTPD.newChunkedResponse(
-                NanoHTTPD.Response.Status.OK, "text/event-stream", null);
+        // 简单转发：读取全部内容后返回
+        String bodyStr = responseBody.string();
+        InputStream in = new ByteArrayInputStream(bodyStr.getBytes(StandardCharsets.UTF_8));
+        Response response = Response.newChunkedResponse(
+                Response.Status.OK, "text/event-stream", in);
         response.addHeader("Cache-Control", "no-cache");
         response.addHeader("Connection", "keep-alive");
         response.addHeader("Access-Control-Allow-Origin", "*");
-
-        // 在后台线程中转发流
-        new Thread(() -> {
-            try {
-                String line;
-                while ((line = source.readUtf8Line()) != null) {
-                    // 写入到响应
-                    // 注意：NanoHTTPD 的 chunked response 需要特殊处理
-                    Log.d(TAG, "SSE: " + line);
-                }
-            } catch (IOException e) {
-                Log.w(TAG, "SSE stream ended", e);
-            }
-        }).start();
-
         return response;
     }
 
@@ -183,21 +168,5 @@ public class OpenAIHandler {
             return baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         }
         return "https://api.openai.com";
-    }
-
-    private static NanoHTTPD.Response jsonResponse(int statusCode, String json) {
-        NanoHTTPD.Response.Status status = NanoHTTPD.Response.Status.lookup(statusCode);
-        NanoHTTPD.Response response = new NanoHTTPD.Response(status, "application/json", json);
-        response.addHeader("Access-Control-Allow-Origin", "*");
-        return response;
-    }
-
-    private static NanoHTTPD.Response sseResponse(String data) {
-        NanoHTTPD.Response response = new NanoHTTPD.Response(
-                NanoHTTPD.Response.Status.OK, "text/event-stream", data);
-        response.addHeader("Cache-Control", "no-cache");
-        response.addHeader("Connection", "keep-alive");
-        response.addHeader("Access-Control-Allow-Origin", "*");
-        return response;
     }
 }

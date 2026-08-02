@@ -210,4 +210,72 @@ public class ConfigManager {
         loadConfig();
         Log.i(TAG, "Config reloaded");
     }
+
+    /**
+     * 应用全量配置（从 JSON 字符串）
+     *
+     * @param jsonConfig JSON 格式的完整配置字符串
+     */
+    public void applyConfig(String jsonConfig) {
+        try {
+            JsonObject newConfig = JsonParser.parseString(jsonConfig).getAsJsonObject();
+            config = newConfig;
+            saveConfig();
+            Log.i(TAG, "Config applied from JSON string");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to apply config", e);
+        }
+    }
+
+    /**
+     * 部分更新配置（合并到现有配置）
+     *
+     * @param patch 包含要更新字段的 JSON 对象
+     */
+    public void patchConfig(org.json.JSONObject patch) {
+        try {
+            for (java.util.Iterator<String> it = patch.keys(); it.hasNext(); ) {
+                String key = it.next();
+                Object value = patch.get(key);
+                if (value instanceof String) {
+                    config.addProperty(key, (String) value);
+                } else if (value instanceof Number) {
+                    config.addProperty(key, (Number) value);
+                } else if (value instanceof Boolean) {
+                    config.addProperty(key, (Boolean) value);
+                } else {
+                    // 尝试作为 Gson JsonElement 处理
+                    config.add(key, com.google.gson.JsonParser.parseString(value.toString()));
+                }
+            }
+            saveConfig();
+            Log.i(TAG, "Config patched");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to patch config", e);
+        }
+    }
+
+    /**
+     * 导入配置（从 JSON 对象）
+     *
+     * @param importConfig JSON 对象格式的配置
+     */
+    public void importConfig(org.json.JSONObject importConfig) {
+        try {
+            config = com.google.gson.JsonParser.parseString(importConfig.toString()).getAsJsonObject();
+            saveConfig();
+            Log.i(TAG, "Config imported");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to import config", e);
+        }
+    }
+
+    /**
+     * 应用 JSON 格式配置字符串（直接替换）
+     *
+     * @param json JSON 字符串
+     */
+    public void applyConfigJson(String json) {
+        applyConfig(json);
+    }
 }

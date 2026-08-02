@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="nav_color">#CDD6F4</color>
+    <color name="nav_active">#7C3AED</color>
+    <color name="colorPrimary">#7C3AED</color>
+    <color name="colorPrimaryVariant">#6D28D9</color>
+    <color name="colorSecondary">#6366F1</color>
+    <color name="colorSuccess">#22C55E</color>
+    <color name="colorWarning">#EAB308</color>
+    <color name="colorError">#EF4444</color>
+    <color name="colorInfo">#3B82F6</color>
+    <color name="colorMuted">#6B7280</color>
+    <color name="colorBg">#1E1E2E</color>
+    <color name="colorSurface">#313244</color>
+    <color name="colorText">#CDD6F4</color>
+    <color name="colorSubtext">#A6ADC8</color>
+    <color name="colorBorder">#45475A</color>
+    <color name="colorHighlight">#F5C2E7</color>
+</resources>

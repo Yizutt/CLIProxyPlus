@@ -97,7 +97,7 @@ public class RequestRouter {
     public static Response jsonResponse(int statusCode, String json) {
         Response.Status status = Response.Status.lookup(statusCode);
         InputStream in = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
-        Response response = Response.newChunkedResponse(status, "application/json", in);
+        Response response = NanoHTTPD.newChunkedResponse(status, "application/json", in);
         response.addHeader("Access-Control-Allow-Origin", "*");
         response.addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
         response.addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -109,7 +109,7 @@ public class RequestRouter {
      */
     public static Response sseResponse(String initialData) {
         InputStream in = new ByteArrayInputStream(initialData.getBytes(StandardCharsets.UTF_8));
-        Response response = Response.newChunkedResponse(Response.Status.OK, "text/event-stream", in);
+        Response response = NanoHTTPD.newChunkedResponse(Response.Status.OK, "text/event-stream", in);
         response.addHeader("Cache-Control", "no-cache");
         response.addHeader("Connection", "keep-alive");
         response.addHeader("Access-Control-Allow-Origin", "*");

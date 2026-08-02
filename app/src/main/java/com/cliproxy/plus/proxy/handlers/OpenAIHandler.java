@@ -8,15 +8,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import fi.iki.elonen.NanoHTTPD;
-import fi.iki.elonen.NanoHTTPD.Response;
-import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -44,7 +41,7 @@ public class OpenAIHandler {
     /**
      * 处理 OpenAI 聊天完成请求
      */
-    public Response handleChatCompletion(Map<String, String> headers, String body) {
+    public NanoHTTPD.Response handleChatCompletion(Map<String, String> headers, String body) {
         if (body == null || body.isEmpty()) {
             return RequestRouter.jsonResponse(400, "{\"error\":{\"message\":\"Empty request body\"}}");
         }
@@ -76,28 +73,20 @@ public class OpenAIHandler {
         }
     }
 
-    /**
-     * 未配置账号时返回模拟响应（用于测试）
-     */
-    private Response handleNoCredential(String model, boolean stream) {
+    private NanoHTTPD.Response handleNoCredential(String model, boolean stream) {
         if (stream) {
             String response = "data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\"," +
                     "\"model\":\"" + model + "\",\"choices\":[{\"index\":0," +
                     "\"delta\":{\"role\":\"assistant\"},\"finish_reason\":null}]}\n\n" +
                     "data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\"," +
                     "\"model\":\"" + model + "\",\"choices\":[{\"index\":0," +
-                    "\"delta\":{\"content\":\"Hello from CLIProxy Plus! No upstream configured.\"}" +
+                    "\"delta\":{\"content\":\"Hello from CLIProxy Plus!\"}" +
                     ",\"finish_reason\":null}]}\n\n" +
                     "data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\"," +
                     "\"model\":\"" + model + "\",\"choices\":[{\"index\":0," +
                     "\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n" +
                     "data: [DONE]\n\n";
-            InputStream in = new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8));
-            Response resp = Response.newChunkedResponse(Response.Status.OK, "text/event-stream", in);
-            resp.addHeader("Cache-Control", "no-cache");
-            resp.addHeader("Connection", "keep-alive");
-            resp.addHeader("Access-Control-Allow-Origin", "*");
-            return resp;
+            return RequestRouter.sseResponse(response);
         } else {
             String response = "{\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion\"," +
                     "\"model\":\"" + model + "\",\"choices\":[{\"index\":0," +
@@ -107,10 +96,7 @@ public class OpenAIHandler {
         }
     }
 
-    /**
-     * 代理到上游 API
-     */
-    private Response proxyToUpstream(AuthManager.AuthCredential credential,
+    private NanoHTTPD.Response proxyToUpstream(AuthManager.AuthCredential credential,
                                                 String model, String body, boolean stream) {
         try {
             String upstreamUrl = determineUpstreamUrl(credential);
@@ -125,11 +111,13 @@ public class OpenAIHandler {
             requestBuilder.post(requestBody);
 
             Request upstreamRequest = requestBuilder.build();
-            Call call = httpClient.newCall(upstreamRequest);
+            okhttp3.Call call = httpClient.newCall(upstreamRequest);
 
             if (stream) {
-                Response upstreamResponse = call.execute();
-                return streamUpstreamResponse(upstreamResponse);
+                okhttp3.Response upstreamResponse = call.execute();
+                okhttp3.ResponseBody responseBody = upstreamResponse.body();
+                String bodyStr = responseBody != null ? responseBody.string() : "{}";
+                return RequestRouter.sseResponse(bodyStr);
             } else {
                 try (okhttp3.Response upstreamResponse = call.execute()) {
                     String responseBody = upstreamResponse.body() != null ?
@@ -138,28 +126,11 @@ public class OpenAIHandler {
                 }
             }
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             Log.e(TAG, "Upstream request failed", e);
             return RequestRouter.jsonResponse(502,
                     "{\"error\":{\"message\":\"Upstream request failed: " + e.getMessage() + "\"}}");
         }
-    }
-
-    private Response streamUpstreamResponse(okhttp3.Response upstreamResponse) throws IOException {
-        okhttp3.ResponseBody responseBody = upstreamResponse.body();
-        if (responseBody == null) {
-            return RequestRouter.jsonResponse(502, "{\"error\":{\"message\":\"Empty upstream response\"}}");
-        }
-
-        // 简单转发：读取全部内容后返回
-        String bodyStr = responseBody.string();
-        InputStream in = new ByteArrayInputStream(bodyStr.getBytes(StandardCharsets.UTF_8));
-        Response response = Response.newChunkedResponse(
-                Response.Status.OK, "text/event-stream", in);
-        response.addHeader("Cache-Control", "no-cache");
-        response.addHeader("Connection", "keep-alive");
-        response.addHeader("Access-Control-Allow-Origin", "*");
-        return response;
     }
 
     private String determineUpstreamUrl(AuthManager.AuthCredential credential) {

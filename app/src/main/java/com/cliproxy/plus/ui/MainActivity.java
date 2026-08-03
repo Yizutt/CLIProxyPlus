@@ -12,6 +12,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.cliproxy.plus.R;
+import com.cliproxy.plus.config.ConfigManager;
 import com.cliproxy.plus.proxy.ProxyService;
 import com.cliproxy.plus.ui.dashboard.DashboardFragment;
 import com.cliproxy.plus.ui.config.ConfigFragment;
@@ -46,6 +47,9 @@ public class MainActivity extends AppCompatActivity {
 
         bottomNav = findViewById(R.id.bottom_navigation);
         viewPager = findViewById(R.id.view_pager);
+
+        // 初始化 ConfigManager
+        ConfigManager.getInstance(this);
 
         setupViewPager();
         setupBottomNav();

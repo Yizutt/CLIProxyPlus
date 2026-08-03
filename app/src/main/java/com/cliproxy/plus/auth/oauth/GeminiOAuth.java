@@ -1031,11 +1031,5 @@ public class GeminiOAuth extends OAuthProvider {
 
     // ====== Logging ======
 
-    private void log(String msg) {
-        Log.d(TAG, msg);
-    }
 
-    private void logError(String msg, Throwable t) {
-        Log.e(TAG, msg, t);
-    }
 }

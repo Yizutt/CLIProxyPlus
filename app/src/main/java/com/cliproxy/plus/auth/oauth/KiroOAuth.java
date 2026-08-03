@@ -2121,7 +2121,7 @@ public class KiroOAuth extends OAuthProvider {
                 payload = sb.toString();
             }
 
-            byte[] decoded = Base64.getUrlDecoder().decode(payload);
+            String jsonStr = decodeBase64Url(payload);
             String jsonStr = new String(decoded, StandardCharsets.UTF_8);
 
             JSONObject json = parseJson(jsonStr);
@@ -2149,11 +2149,12 @@ public class KiroOAuth extends OAuthProvider {
             try {
                 String[] altParts = accessToken.split("\\.");
                 if (altParts.length >= 2) {
-                    byte[] decoded = Base64.getUrlDecoder().withoutPadding().decode(altParts[1]);
-                    String jsonStr = new String(decoded, StandardCharsets.UTF_8);
-                    JSONObject json = parseJson(jsonStr);
-                    if (json.has("email")) {
-                        return json.optString("email", "");
+                    String jsonStr = decodeBase64Url(altParts[1]);
+                    if (jsonStr != null) {
+                        JSONObject json = parseJson(jsonStr);
+                        if (json.has("email")) {
+                            return json.optString("email", "");
+                        }
                     }
                 }
             } catch (Exception ignored) {
@@ -2447,6 +2448,15 @@ public class KiroOAuth extends OAuthProvider {
             return new JSONObject(body);
         } catch (org.json.JSONException e) {
             throw new IOException("kiro: failed to parse JSON", e);
+        }
+    }
+
+    private static String decodeBase64Url(String input) {
+        try {
+            byte[] decoded = android.util.Base64.decode(input, android.util.Base64.URL_SAFE);
+            return new String(decoded, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return null;
         }
     }
 

@@ -17,9 +17,19 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
+import com.cliproxy.plus.management.ManagementAPIClient;
+import com.cliproxy.plus.config.ConfigManager;
+import android.os.Handler;
+import android.os.Looper;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import android.os.Handler;
+import android.os.Looper;
+
+import com.cliproxy.plus.config.ConfigManager;
+import com.cliproxy.plus.management.ManagementAPIClient;
 
 import java.util.Locale;
 import java.util.Random;
@@ -115,7 +125,51 @@ public class UsageFragment extends Fragment {
 
     private void refreshData() {
         Log.d(TAG, "Refreshing usage data...");
-        // 等待实际数据源接入
+        new Thread(() -> {
+            try {
+                int port = ConfigManager.getInstance().getInt("port", 8317);
+                ManagementAPIClient client = new ManagementAPIClient("http://127.0.0.1:" + port);
+                JSONObject usage = client.getUsage();
+
+                final long totalRequests = usage.optLong("total_requests", 0);
+                final long totalTokens = usage.optLong("total_tokens", 0);
+                final double successRate = usage.optDouble("success_rate", 0.0);
+                final JSONArray models = usage.optJSONArray("models");
+
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    setText(totalRequestsText, formatNumber(totalRequests), COLOR_TEXT);
+                    setText(totalTokensText, formatNumber(totalTokens), COLOR_TEXT);
+                    String rateText = String.format(Locale.US, "%.1f%%", successRate);
+                    String rateColor = successRate >= 95.0 ? COLOR_SUCCESS
+                            : successRate >= 85.0 ? COLOR_WARNING : COLOR_ERROR;
+                    setText(successRateText, rateText, rateColor);
+                    renderModelList(models);
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to fetch usage data", e);
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    setText(totalRequestsText, "Error", COLOR_ERROR);
+                    setText(totalTokensText, "Error", COLOR_ERROR);
+                    setText(successRateText, "Error", COLOR_ERROR);
+                    modelListContainer.removeAllViews();
+                    TextView empty = new TextView(requireContext());
+                    empty.setText("Failed to load data: " + e.getMessage());
+                    empty.setTextColor(Color.parseColor(COLOR_ERROR));
+                    empty.setTextSize(14);
+                    empty.setPadding(0, 16, 0, 8);
+                    modelListContainer.addView(empty);
+                });
+            }
+        }).start();
+    }
+
+    private String formatNumber(long n) {
+        if (n >= 1_000_000) {
+            return String.format(Locale.US, "%.1fM", n / 1_000_000.0);
+        } else if (n >= 1_000) {
+            return String.format(Locale.US, "%.1fK", n / 1_000.0);
+        }
+        return String.valueOf(n);
     }
 
     /**

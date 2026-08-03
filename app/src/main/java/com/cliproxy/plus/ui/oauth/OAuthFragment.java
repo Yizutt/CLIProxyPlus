@@ -23,6 +23,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
+import com.cliproxy.plus.management.ManagementAPIClient;
+import com.cliproxy.plus.config.ConfigManager;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.cliproxy.plus.auth.AuthManager;
 import com.cliproxy.plus.auth.AuthManager.AuthCredential;
@@ -30,15 +34,15 @@ import com.cliproxy.plus.auth.oauth.OAuthProvider;
 import com.cliproxy.plus.auth.oauth.OAuthProvider.PKCECodes;
 import com.cliproxy.plus.auth.oauth.OAuthProvider.TokenData;
 import com.cliproxy.plus.auth.oauth.OAuthProvider.AuthResult;
+import com.cliproxy.plus.config.ConfigManager;
+import com.cliproxy.plus.management.ManagementAPIClient;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -72,6 +76,8 @@ public class OAuthFragment extends Fragment {
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    private ManagementAPIClient apiClient;
 
     // Predefined list of known OAuth providers
     private final List<ProviderInfo> providers = new ArrayList<>();
@@ -167,6 +173,12 @@ public class OAuthFragment extends Fragment {
         root.addView(refreshButton);
 
         scrollView.addView(root);
+
+        // Initialize Management API client to fetch data from the Go server
+        int port = ConfigManager.getInstance().getInt("port", 8317);
+        apiClient = new ManagementAPIClient("http://127.0.0.1:" + port);
+        Log.d(TAG, "ManagementAPIClient initialized with port " + port);
+
         return scrollView;
     }
 
@@ -198,7 +210,8 @@ public class OAuthFragment extends Fragment {
     }
 
     /**
-     * Load provider list from AuthManager, merging with known providers.
+     * Load provider list from the Go server via ManagementAPIClient.
+     * Fetches auth files and their status, merging with known providers.
      */
     private void loadProviders() {
         providers.clear();
@@ -214,62 +227,84 @@ public class OAuthFragment extends Fragment {
         knownProviders.add(new ProviderInfo("openrouter", "OpenRouter", "OR"));
         knownProviders.add(new ProviderInfo("custom", "自定义提供商", "C"));
 
-        // Check AuthManager for existing credentials
-        AuthManager authManager = AuthManager.getInstance();
-        List<AuthCredential> allCredentials = authManager.listCredentials();
+        // Fetch auth files from the Go server via ManagementAPIClient
+        try {
+            JSONArray authFiles = apiClient.listAuthFiles();
 
-        // Build a map of provider -> list of credentials for quick lookup
-        Map<String, List<AuthCredential>> credsByProvider = new LinkedHashMap<>();
-        for (AuthCredential cred : allCredentials) {
-            if (cred.type == AuthCredential.AuthType.OAUTH) {
-                credsByProvider.computeIfAbsent(cred.provider, k -> new ArrayList<>()).add(cred);
+            // Build a set of provider IDs that have auth files
+            java.util.Set<String> loggedInProviders = new java.util.HashSet<>();
+            java.util.Map<String, String> providerEmails = new java.util.HashMap<>();
+
+            if (authFiles != null) {
+                for (int i = 0; i < authFiles.length(); i++) {
+                    JSONObject file = authFiles.optJSONObject(i);
+                    if (file != null) {
+                        String provider = file.optString("provider", "");
+                        String name = file.optString("name", "");
+                        if (!provider.isEmpty()) {
+                            loggedInProviders.add(provider);
+                            if (!name.isEmpty()) {
+                                providerEmails.put(provider, name);
+                            }
+                        }
+                    } else {
+                        // If array element is a plain string, use it as provider id
+                        String providerStr = authFiles.optString(i, "");
+                        if (!providerStr.isEmpty()) {
+                            loggedInProviders.add(providerStr);
+                        }
+                    }
+                }
             }
-        }
 
-        for (ProviderInfo info : knownProviders) {
-            List<AuthCredential> providerCreds = credsByProvider.get(info.id);
-            if (providerCreds != null && !providerCreds.isEmpty()) {
-                info.loggedIn = true;
-                info.credential = providerCreds.get(0);
-                // Try to extract account email from metadata
-                if (info.credential.metadata != null) {
-                    info.accountEmail = info.credential.metadata.getOrDefault("email", "");
+            for (ProviderInfo info : knownProviders) {
+                if (loggedInProviders.contains(info.id)) {
+                    info.loggedIn = true;
+                    info.accountEmail = providerEmails.getOrDefault(info.id, "已登录");
+                } else {
+                    info.loggedIn = false;
+                    info.accountEmail = "";
                 }
-                if (info.accountEmail.isEmpty()) {
-                    info.accountEmail = info.credential.label != null && !info.credential.label.isEmpty()
-                            ? info.credential.label : "已登录";
+                info.credential = null;
+                providers.add(info);
+            }
+
+            // Add any providers from auth files not in the known list
+            for (String providerId : loggedInProviders) {
+                boolean known = false;
+                for (ProviderInfo info : knownProviders) {
+                    if (info.id.equals(providerId)) {
+                        known = true;
+                        break;
+                    }
                 }
-            } else {
+                if (!known) {
+                    ProviderInfo unknownInfo = new ProviderInfo(
+                            providerId, providerId, "?");
+                    unknownInfo.loggedIn = true;
+                    unknownInfo.accountEmail = providerEmails.getOrDefault(providerId, "已登录");
+                    providers.add(unknownInfo);
+                }
+            }
+
+            Log.d(TAG, "loadProviders: loaded " + providers.size() + " providers from server, "
+                    + getLoggedInCount() + " logged in");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to load auth files from server", e);
+            // Fallback: show known providers as not logged in
+            for (ProviderInfo info : knownProviders) {
                 info.loggedIn = false;
                 info.accountEmail = "";
                 info.credential = null;
+                providers.add(info);
             }
-            providers.add(info);
-        }
 
-        // Add any credentials from providers not in the known list
-        for (Map.Entry<String, List<AuthCredential>> entry : credsByProvider.entrySet()) {
-            boolean known = false;
-            for (ProviderInfo info : knownProviders) {
-                if (info.id.equals(entry.getKey())) {
-                    known = true;
-                    break;
-                }
-            }
-            if (!known && !entry.getValue().isEmpty()) {
-                AuthCredential cred = entry.getValue().get(0);
-                ProviderInfo unknownInfo = new ProviderInfo(
-                        entry.getKey(), entry.getKey(), "?");
-                unknownInfo.loggedIn = true;
-                unknownInfo.credential = cred;
-                unknownInfo.accountEmail = cred.label != null && !cred.label.isEmpty()
-                        ? cred.label : "已登录";
-                providers.add(unknownInfo);
-            }
+            // Still add a note about the failure to the status summary
+            mainHandler.post(() -> {
+                statusSummary.setText("加载失败: " + e.getMessage());
+                statusSummary.setTextColor(Color.parseColor(COLOR_RED));
+            });
         }
-
-        Log.d(TAG, "loadProviders: loaded " + providers.size() + " providers, "
-                + getLoggedInCount() + " logged in");
     }
 
     private int getLoggedInCount() {

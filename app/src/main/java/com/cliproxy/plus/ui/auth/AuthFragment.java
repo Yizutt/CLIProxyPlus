@@ -3,6 +3,8 @@ package com.cliproxy.plus.ui.auth;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -13,13 +15,24 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
+import com.cliproxy.plus.management.ManagementAPIClient;
+import com.cliproxy.plus.config.ConfigManager;
+import android.os.Handler;
+import android.os.Looper;
 
-import com.cliproxy.plus.auth.AuthManager;
+import com.cliproxy.plus.config.ConfigManager;
+import com.cliproxy.plus.management.ManagementAPIClient;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Auth Files - 账号管理
  */
 public class AuthFragment extends Fragment {
+
+    private LinearLayout root;
+    private ManagementAPIClient apiClient;
 
     @Nullable
     @Override
@@ -33,7 +46,7 @@ public class AuthFragment extends Fragment {
         scroll.setBackgroundColor(0xFF1E1E2E);
         scroll.setPadding(16, 16, 16, 16);
 
-        LinearLayout root = new LinearLayout(requireContext());
+        root = new LinearLayout(requireContext());
         root.setOrientation(LinearLayout.VERTICAL);
         root.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -42,18 +55,8 @@ public class AuthFragment extends Fragment {
         // 标题
         root.addView(makeTitle("Auth Files"));
 
-        // 账号统计
-        AuthManager am = AuthManager.getInstance();
-        root.addView(makeCard("凭证概览",
-            makeInfoRow("总凭证数", String.valueOf(am.getTotalCount())),
-            makeInfoRow("活跃凭证", String.valueOf(am.getActiveCount())),
-            makeInfoRow("路由策略", am.getStrategy().toString())));
-
-        // 提供商列表
-        root.addView(makeCard("支持的提供商",
-            makeInfoRow("OAuth", "Claude, Codex, Gemini, Antigravity, Kimi, xAI, Kiro, Copilot, Kilo, GitLab, CodeBuddy, Cursor, Qoder, iFlow"),
-            makeInfoRow("API Key", "Claude, Codex, Gemini, xAI, Vertex, OpenAI-Compat"),
-            makeInfoRow("其他", "Kiro, Kilo (Token Import)")));
+        // 加载中占位
+        root.addView(makeCard("Auth Files", makeInfoRow("状态", "加载中...")));
 
         // 使用说明
         root.addView(makeCard("使用说明",
@@ -62,7 +65,55 @@ public class AuthFragment extends Fragment {
             makeInfoRow("\u25B6 管理", "在 Config 标签页查看配置")));
 
         scroll.addView(root);
+
+        // 在后台线程加载数据
+        int port = ConfigManager.getInstance().getInt("port", 8317);
+        apiClient = new ManagementAPIClient("http://127.0.0.1:" + port);
+        loadAuthFiles();
+
         return scroll;
+    }
+
+    private void loadAuthFiles() {
+        new Thread(() -> {
+            try {
+                JSONArray files = apiClient.listAuthFiles();
+                Handler mainHandler = new Handler(Looper.getMainLooper());
+                mainHandler.post(() -> populateAuthFiles(files));
+            } catch (Exception e) {
+                Handler mainHandler = new Handler(Looper.getMainLooper());
+                mainHandler.post(() -> {
+                    // 替换第一个卡片为错误信息
+                    root.removeViewAt(1);
+                    root.addView(makeCard("Auth Files",
+                        makeInfoRow("错误", "加载失败: " + e.getMessage())), 1);
+                });
+            }
+        }).start();
+    }
+
+    private void populateAuthFiles(JSONArray files) {
+        // 移除加载中的卡片
+        root.removeViewAt(1);
+
+        if (files == null || files.length() == 0) {
+            root.addView(makeCard("Auth Files", makeInfoRow("状态", "暂无认证文件")), 1);
+            return;
+        }
+
+        LinearLayout[] rows = new LinearLayout[files.length()];
+        for (int i = 0; i < files.length(); i++) {
+            JSONObject file = files.optJSONObject(i);
+            if (file != null) {
+                String name = file.optString("name", "未知");
+                String provider = file.optString("provider", "未知");
+                rows[i] = makeInfoRow(name, provider);
+            } else {
+                // 如果数组元素是纯字符串（文件名）
+                rows[i] = makeInfoRow("文件", files.optString(i, "未知"));
+            }
+        }
+        root.addView(makeCard("Auth Files (" + files.length() + ")", rows), 1);
     }
 
     private TextView makeTitle(String t) {

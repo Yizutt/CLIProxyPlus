@@ -4,6 +4,8 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -19,8 +21,17 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
+import com.cliproxy.plus.management.ManagementAPIClient;
+import com.cliproxy.plus.config.ConfigManager;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.cliproxy.plus.auth.AuthManager;
+import com.cliproxy.plus.config.ConfigManager;
+import com.cliproxy.plus.management.ManagementAPIClient;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -45,6 +56,7 @@ public class APIKeysFragment extends Fragment {
     };
 
     private LinearLayout root;
+    private ManagementAPIClient apiClient;
     private final Map<String, List<AuthManager.AuthCredential>> keyStore = new LinkedHashMap<>();
 
     @Nullable

@@ -45,6 +45,10 @@ android {
         exclude 'META-INF/NOTICE'
         exclude 'META-INF/NOTICE.txt'
     }
+
+    aaptOptions {
+        noCompress 'cliproxy-server'
+    }
 }
 
 dependencies {

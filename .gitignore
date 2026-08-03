@@ -11,4 +11,4 @@ local.properties
 app/build
 *.keystore
 *.jks
-keystore.b64
+keystore.b64cliproxy-server

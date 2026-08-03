@@ -20,6 +20,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          path: android-app
+
+      - name: Checkout CLIProxyAPIPlus
+        uses: actions/checkout@v4
+        with:
+          repository: kaitranntt/CLIProxyAPIPlus
+          path: cliproxy-server
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: cliproxy-server/go.sum
+
+      - name: Build Go server binary
+        run: |
+          cd cliproxy-server
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ../android-app/app/src/main/assets/cliproxy-server ./cmd/server/
+          ls -la ../android-app/app/src/main/assets/cliproxy-server
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4

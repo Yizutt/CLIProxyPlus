@@ -8,8 +8,6 @@ import java.util.Map;
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.NanoHTTPD.Response;
 
-import com.cliproxy.plus.proxy.handlers.ClaudeHandler;
-import com.cliproxy.plus.proxy.handlers.GeminiHandler;
 import com.cliproxy.plus.proxy.handlers.OpenAIHandler;
 import com.cliproxy.plus.proxy.middleware.AuthMiddleware;
 

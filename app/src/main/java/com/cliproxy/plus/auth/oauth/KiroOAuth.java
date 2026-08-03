@@ -2122,7 +2122,6 @@ public class KiroOAuth extends OAuthProvider {
             }
 
             String jsonStr = decodeBase64Url(payload);
-            String jsonStr = new String(decoded, StandardCharsets.UTF_8);
 
             JSONObject json = parseJson(jsonStr);
             // 优先使用 email

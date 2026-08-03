@@ -15,11 +15,17 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
+
+import com.cliproxy.plus.agent.llm.CustomLLMClient;
+import com.cliproxy.plus.config.ConfigManager;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -51,6 +57,7 @@ public class AgentFragment extends Fragment {
     private Button clearButton;
 
     private final List<ChatMessage> messages = new ArrayList<>();
+    private CustomLLMClient llmClient;
     private ChatAdapter chatAdapter;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -156,6 +163,33 @@ public class AgentFragment extends Fragment {
             }
         });
         header.addView(clearButton);
+
+        // Settings button
+        Button settingsBtn = new Button(requireContext());
+        settingsBtn.setText("\u2699");
+        settingsBtn.setTextSize(16);
+        settingsBtn.setTextColor(Color.parseColor(COLOR_TEXT));
+        settingsBtn.setBackgroundColor(Color.parseColor("#45475A"));
+        settingsBtn.setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(6));
+        settingsBtn.setMinimumWidth(0);
+        settingsBtn.setMinHeight(0);
+        settingsBtn.setMaxHeight(dpToPx(32));
+        settingsBtn.setGravity(Gravity.CENTER);
+        android.view.ViewGroup.MarginLayoutParams settingsMargins = (android.view.ViewGroup.MarginLayoutParams) settingsBtn.getLayoutParams();
+        if (settingsMargins == null) {
+            settingsMargins = new LinearLayout.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        settingsMargins.setMargins(dpToPx(8), 0, 0, 0);
+        settingsBtn.setLayoutParams(settingsMargins);
+        settingsBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showConfigDialog();
+            }
+        });
+        header.addView(settingsBtn);
 
         return header;
     }
@@ -264,15 +298,40 @@ public class AgentFragment extends Fragment {
         addMessage(text, true);
         showTypingIndicator(true);
 
-        // Simulate agent response after a delay
-        mainHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                showTypingIndicator(false);
-                String response = generateAgentResponse(text);
-                addMessage(response, false);
-            }
-        }, 1200);
+        if (llmClient != null) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        final String response = llmClient.generateResponse(text);
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                showTypingIndicator(false);
+                                addMessage(response, false);
+                            }
+                        });
+                    } catch (final Exception e) {
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                showTypingIndicator(false);
+                                addMessage("Error: " + e.getMessage(), false);
+                            }
+                        });
+                    }
+                }
+            }).start();
+        } else {
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    showTypingIndicator(false);
+                    String response = generateAgentResponse(text);
+                    addMessage(response, false);
+                }
+            }, 800);
+        }
     }
 
     private void clearChat() {
@@ -447,6 +506,123 @@ public class AgentFragment extends Fragment {
     private String formatTimestamp(long millis) {
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
         return sdf.format(new java.util.Date(millis));
+    }
+
+    private void showConfigDialog() {
+        ConfigManager config = ConfigManager.getInstance();
+        JSONObject agentConfig = config.getConfig().optJSONObject("agent");
+        if (agentConfig == null) {
+            agentConfig = new JSONObject();
+        }
+
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
+        builder.setTitle("AI Agent 配置");
+
+        LinearLayout layout = new LinearLayout(requireContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16));
+
+        // 端点
+        TextView endpointLabel = new TextView(requireContext());
+        endpointLabel.setText("API 端点");
+        endpointLabel.setTextColor(Color.parseColor("#CDD6F4"));
+        endpointLabel.setTextSize(14);
+        endpointLabel.setPadding(0, 0, 0, 4);
+        layout.addView(endpointLabel);
+
+        EditText endpointInput = new EditText(requireContext());
+        endpointInput.setHint("https://api.openai.com/v1");
+        endpointInput.setText(agentConfig.optString("custom_endpoint", ""));
+        endpointInput.setTextColor(Color.parseColor("#CDD6F4"));
+        endpointInput.setHintTextColor(Color.parseColor("#6B7280"));
+        endpointInput.setBackgroundColor(Color.parseColor("#313244"));
+        endpointInput.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
+        android.view.ViewGroup.MarginLayoutParams epMargins = (android.view.ViewGroup.MarginLayoutParams) endpointInput.getLayoutParams();
+        if (epMargins == null) {
+            epMargins = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        epMargins.setMargins(0, 0, 0, dpToPx(12));
+        endpointInput.setLayoutParams(epMargins);
+        layout.addView(endpointInput);
+
+        // API Key
+        TextView keyLabel = new TextView(requireContext());
+        keyLabel.setText("API Key");
+        keyLabel.setTextColor(Color.parseColor("#CDD6F4"));
+        keyLabel.setTextSize(14);
+        keyLabel.setPadding(0, 0, 0, 4);
+        layout.addView(keyLabel);
+
+        EditText keyInput = new EditText(requireContext());
+        keyInput.setHint("sk-...");
+        keyInput.setText(agentConfig.optString("custom_api_key", ""));
+        keyInput.setTextColor(Color.parseColor("#CDD6F4"));
+        keyInput.setHintTextColor(Color.parseColor("#6B7280"));
+        keyInput.setBackgroundColor(Color.parseColor("#313244"));
+        keyInput.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
+        android.view.ViewGroup.MarginLayoutParams keyMargins = (android.view.ViewGroup.MarginLayoutParams) keyInput.getLayoutParams();
+        if (keyMargins == null) {
+            keyMargins = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        keyMargins.setMargins(0, 0, 0, dpToPx(12));
+        keyInput.setLayoutParams(keyMargins);
+        layout.addView(keyInput);
+
+        // 模型
+        TextView modelLabel = new TextView(requireContext());
+        modelLabel.setText("模型名称");
+        modelLabel.setTextColor(Color.parseColor("#CDD6F4"));
+        modelLabel.setTextSize(14);
+        modelLabel.setPadding(0, 0, 0, 4);
+        layout.addView(modelLabel);
+
+        EditText modelInput = new EditText(requireContext());
+        modelInput.setHint("gpt-4, claude-sonnet, gemini-pro...");
+        modelInput.setText(agentConfig.optString("custom_model", ""));
+        modelInput.setTextColor(Color.parseColor("#CDD6F4"));
+        modelInput.setHintTextColor(Color.parseColor("#6B7280"));
+        modelInput.setBackgroundColor(Color.parseColor("#313244"));
+        modelInput.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
+        layout.addView(modelInput);
+
+        builder.setView(layout);
+        builder.setPositiveButton("保存", new android.content.DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(android.content.DialogInterface dialog, int which) {
+                try {
+                    JSONObject agent = new JSONObject();
+                    agent.put("custom_endpoint", endpointInput.getText().toString().trim());
+                    agent.put("custom_api_key", keyInput.getText().toString().trim());
+                    agent.put("custom_model", modelInput.getText().toString().trim());
+                    config.getConfig().put("agent", agent);
+                    config.saveConfig();
+                    initLLMClient();
+                    Toast.makeText(requireContext(), "配置已保存", Toast.LENGTH_SHORT).show();
+                } catch (JSONException e) {
+                    Log.e(TAG, "Failed to save config", e);
+                }
+            }
+        });
+        builder.setNegativeButton("取消", null);
+        builder.show();
+    }
+
+    private void initLLMClient() {
+        ConfigManager config = ConfigManager.getInstance();
+        JSONObject agentConfig = config.getConfig().optJSONObject("agent");
+        if (agentConfig != null) {
+            String endpoint = agentConfig.optString("custom_endpoint", "");
+            String apiKey = agentConfig.optString("custom_api_key", "");
+            String model = agentConfig.optString("custom_model", "");
+            if (!endpoint.isEmpty() && !apiKey.isEmpty()) {
+                llmClient = new CustomLLMClient(endpoint, apiKey, model);
+                Log.i(TAG, "LLM client initialized: " + endpoint + " / " + model);
+            }
+        }
     }
 
     private int dpToPx(int dp) {

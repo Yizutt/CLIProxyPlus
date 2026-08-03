@@ -174,7 +174,7 @@ public class ClaudeOAuth extends OAuthProvider {
     /**
      * Internal error type for token refresh HTTP failures.
      */
-    private static class RefreshHttpError extends Exception {
+    private static class RefreshHttpError extends IOException {
         final int status;
         final boolean retryable;
 

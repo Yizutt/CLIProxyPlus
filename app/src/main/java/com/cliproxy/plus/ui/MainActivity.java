@@ -5,8 +5,10 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -23,19 +25,18 @@ import com.cliproxy.plus.ui.oauth.OAuthFragment;
 import com.cliproxy.plus.ui.usage.UsageFragment;
 import com.cliproxy.plus.ui.logs.LogsFragment;
 import com.cliproxy.plus.ui.agent.AgentFragment;
-import com.google.android.material.bottomnavigation.BottomNavigationItemView;
-import com.google.android.material.bottomnavigation.BottomNavigationMenuView;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.navigation.NavigationBarView;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private BottomNavigationView bottomNav;
     private ViewPager2 viewPager;
     private ViewPagerAdapter adapter;
+    private LinearLayout bottomNav;
+    private final String[] tabNames = {"Dashboard", "Config", "Auth", "API Keys", "OAuth", "Usage", "Logs", "Agent"};
+    private final List<TextView> tabViews = new ArrayList<>();
+    private int activeTab = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,21 +60,43 @@ public class MainActivity extends AppCompatActivity {
                 0, 1f));
         viewPager.setId(android.R.id.content);
 
-        // BottomNavigationView
-        bottomNav = new BottomNavigationView(this);
+        // BottomNavigationView 替换为纯 LinearLayout
+        bottomNav = new LinearLayout(this);
         bottomNav.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT));
-        bottomNav.setBackgroundColor(Color.parseColor("#1E1E2E"));
-        bottomNav.setItemIconTintList(null);
-        bottomNav.setItemTextColor(null);
+                dpToPx(56)));
+        bottomNav.setOrientation(LinearLayout.HORIZONTAL);
+        bottomNav.setBackgroundColor(Color.parseColor("#313244"));
+        bottomNav.setGravity(Gravity.CENTER);
+
+        // 创建 Tab 按钮
+        for (int i = 0; i < tabNames.length; i++) {
+            final int index = i;
+            TextView tab = new TextView(this);
+            LinearLayout.LayoutParams tabParams = new LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+            tab.setLayoutParams(tabParams);
+            tab.setText(tabNames[i]);
+            tab.setTextSize(10);
+            tab.setGravity(Gravity.CENTER);
+            tab.setTextColor(Color.parseColor("#A6ADC8"));
+            tab.setPadding(2, 4, 2, 4);
+            tab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    selectTab(index);
+                }
+            });
+            tabViews.add(tab);
+            bottomNav.addView(tab);
+        }
 
         root.addView(viewPager);
         root.addView(bottomNav);
         setContentView(root);
 
         setupViewPager();
-        setupBottomNav();
+        selectTab(0);
 
         // 启动服务
         startProxyService();
@@ -97,34 +120,28 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
-                if (bottomNav.getMenu().size() > position) {
-                    bottomNav.getMenu().getItem(position).setChecked(true);
-                }
+                selectTab(position);
             }
         });
     }
 
-    private void setupBottomNav() {
-        bottomNav.getMenu().add(0, 1, 0, "Dashboard");
-        bottomNav.getMenu().add(0, 2, 0, "Config");
-        bottomNav.getMenu().add(0, 3, 0, "Auth");
-        bottomNav.getMenu().add(0, 4, 0, "API Keys");
-        bottomNav.getMenu().add(0, 5, 0, "OAuth");
-        bottomNav.getMenu().add(0, 6, 0, "Usage");
-        bottomNav.getMenu().add(0, 7, 0, "Logs");
-        bottomNav.getMenu().add(0, 8, 0, "Agent");
-
-        bottomNav.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
-            @Override
-            public boolean onNavigationItemSelected(android.view.MenuItem item) {
-                int id = item.getItemId();
-                int index = id - 1;
-                if (index >= 0 && index < adapter.getItemCount()) {
-                    viewPager.setCurrentItem(index);
-                }
-                return true;
+    private void selectTab(int index) {
+        activeTab = index;
+        viewPager.setCurrentItem(index, false);
+        for (int i = 0; i < tabViews.size(); i++) {
+            if (i == index) {
+                tabViews.get(i).setTextColor(Color.parseColor("#7C3AED"));
+                tabViews.get(i).setTypeface(null, android.graphics.Typeface.BOLD);
+            } else {
+                tabViews.get(i).setTextColor(Color.parseColor("#A6ADC8"));
+                tabViews.get(i).setTypeface(null, android.graphics.Typeface.NORMAL);
             }
-        });
+        }
+    }
+
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
     }
 
     private void startProxyService() {

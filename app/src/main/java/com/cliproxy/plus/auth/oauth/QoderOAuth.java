@@ -519,7 +519,7 @@ public class QoderOAuth extends OAuthProvider {
                     }
 
                     // 200 — 成功，解析令牌数据
-                    JSONObject json = new JSONObject(body);
+                    JSONObject json = parseJson(body);
                     String token = json.optString("token", "");
                     if (token.isEmpty()) {
                         throw new OAuthException(OAuthException.TYPE_PROVIDER_ERROR,
@@ -852,7 +852,7 @@ public class QoderOAuth extends OAuthProvider {
     private static String parseErrorMessage(String body) {
         try {
             if (body != null && !body.isEmpty()) {
-                JSONObject json = new JSONObject(body);
+                JSONObject json = parseJson(body);
                 return json.optString("message", null);
             }
         } catch (Exception ignored) {

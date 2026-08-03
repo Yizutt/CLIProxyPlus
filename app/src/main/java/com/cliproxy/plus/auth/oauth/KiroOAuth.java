@@ -2124,7 +2124,7 @@ public class KiroOAuth extends OAuthProvider {
             byte[] decoded = Base64.getUrlDecoder().decode(payload);
             String jsonStr = new String(decoded, StandardCharsets.UTF_8);
 
-            JSONObject json = new JSONObject(jsonStr);
+            JSONObject json = parseJson(jsonStr);
             // 优先使用 email
             if (json.has("email")) {
                 String email = json.optString("email", "");
@@ -2149,7 +2149,7 @@ public class KiroOAuth extends OAuthProvider {
             try {
                 byte[] decoded = Base64.getUrlDecoder().withoutPadding().decode(parts[1]);
                 String jsonStr = new String(decoded, StandardCharsets.UTF_8);
-                JSONObject json = new JSONObject(jsonStr);
+                JSONObject json = parseJson(jsonStr);
                 if (json.has("email")) {
                     return json.optString("email", "");
                 }

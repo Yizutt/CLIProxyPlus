@@ -12,3 +12,4 @@ app/build
 *.keystore
 *.jks
 keystore.b64cliproxy-server
+cliproxy-server

@@ -1,17 +1,18 @@
 package com.cliproxy.plus.ui;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.MenuItem;
+import android.view.Gravity;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
-import com.cliproxy.plus.R;
 import com.cliproxy.plus.config.ConfigManager;
 import com.cliproxy.plus.proxy.ProxyService;
 import com.cliproxy.plus.ui.dashboard.DashboardFragment;
@@ -22,39 +23,59 @@ import com.cliproxy.plus.ui.oauth.OAuthFragment;
 import com.cliproxy.plus.ui.usage.UsageFragment;
 import com.cliproxy.plus.ui.logs.LogsFragment;
 import com.cliproxy.plus.ui.agent.AgentFragment;
+import com.google.android.material.bottomnavigation.BottomNavigationItemView;
+import com.google.android.material.bottomnavigation.BottomNavigationMenuView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * MainActivity - 主入口
- * 底部导航栏 + ViewPager2 切换页面
- * 对应原版 TUI 的 Tab 栏
- */
 public class MainActivity extends AppCompatActivity {
 
     private BottomNavigationView bottomNav;
     private ViewPager2 viewPager;
     private ViewPagerAdapter adapter;
-    private boolean serverRunning = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        bottomNav = findViewById(R.id.bottom_navigation);
-        viewPager = findViewById(R.id.view_pager);
 
         // 初始化 ConfigManager
         ConfigManager.getInstance(this);
 
+        // 纯 Java 构建 UI
+        LinearLayout root = new LinearLayout(this);
+        root.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(Color.parseColor("#1E1E2E"));
+
+        // ViewPager2
+        viewPager = new ViewPager2(this);
+        viewPager.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0, 1f));
+        viewPager.setId(android.R.id.content);
+
+        // BottomNavigationView
+        bottomNav = new BottomNavigationView(this);
+        bottomNav.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+        bottomNav.setBackgroundColor(Color.parseColor("#1E1E2E"));
+        bottomNav.setItemIconTintList(null);
+        bottomNav.setItemTextColor(null);
+
+        root.addView(viewPager);
+        root.addView(bottomNav);
+        setContentView(root);
+
         setupViewPager();
         setupBottomNav();
 
-        // 默认启动服务器
+        // 启动服务
         startProxyService();
     }
 
@@ -76,24 +97,31 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
-                bottomNav.getMenu().getItem(position).setChecked(true);
+                if (bottomNav.getMenu().size() > position) {
+                    bottomNav.getMenu().getItem(position).setChecked(true);
+                }
             }
         });
     }
 
     private void setupBottomNav() {
+        bottomNav.getMenu().add(0, 1, 0, "Dashboard");
+        bottomNav.getMenu().add(0, 2, 0, "Config");
+        bottomNav.getMenu().add(0, 3, 0, "Auth");
+        bottomNav.getMenu().add(0, 4, 0, "API Keys");
+        bottomNav.getMenu().add(0, 5, 0, "OAuth");
+        bottomNav.getMenu().add(0, 6, 0, "Usage");
+        bottomNav.getMenu().add(0, 7, 0, "Logs");
+        bottomNav.getMenu().add(0, 8, 0, "Agent");
+
         bottomNav.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
             @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            public boolean onNavigationItemSelected(android.view.MenuItem item) {
                 int id = item.getItemId();
-                if (id == R.id.nav_dashboard) viewPager.setCurrentItem(0);
-                else if (id == R.id.nav_config) viewPager.setCurrentItem(1);
-                else if (id == R.id.nav_auth) viewPager.setCurrentItem(2);
-                else if (id == R.id.nav_apikeys) viewPager.setCurrentItem(3);
-                else if (id == R.id.nav_oauth) viewPager.setCurrentItem(4);
-                else if (id == R.id.nav_usage) viewPager.setCurrentItem(5);
-                else if (id == R.id.nav_logs) viewPager.setCurrentItem(6);
-                else if (id == R.id.nav_agent) viewPager.setCurrentItem(7);
+                int index = id - 1;
+                if (index >= 0 && index < adapter.getItemCount()) {
+                    viewPager.setCurrentItem(index);
+                }
                 return true;
             }
         });
@@ -107,28 +135,8 @@ public class MainActivity extends AppCompatActivity {
         } else {
             startService(intent);
         }
-        serverRunning = true;
     }
 
-    private void stopProxyService() {
-        Intent intent = new Intent(this, ProxyService.class);
-        intent.setAction("STOP");
-        stopService(intent);
-        serverRunning = false;
-    }
-
-    public boolean isServerRunning() {
-        return serverRunning;
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-    }
-
-    /**
-     * ViewPager2 适配器（使用 FragmentStateAdapter）
-     */
     static class ViewPagerAdapter extends FragmentStateAdapter {
         private final List<Fragment> fragments = new ArrayList<>();
 
@@ -140,7 +148,6 @@ public class MainActivity extends AppCompatActivity {
             fragments.add(fragment);
         }
 
-        @NonNull
         @Override
         public Fragment createFragment(int position) {
             return fragments.get(position);

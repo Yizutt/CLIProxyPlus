@@ -1,6 +1,7 @@
 package com.cliproxy.plus.ui.dashboard;
 
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.ViewGroup;
@@ -18,15 +19,31 @@ import com.cliproxy.plus.config.ConfigManager;
 
 /**
  * DashboardFragment - 仪表盘 (纯 Java UI)
+ * Material Design 3 dark theme with modern card layouts.
  */
 public class DashboardFragment extends Fragment {
 
+    // ── MD3 Dark Theme Colors ──────────────────────────────────────
+    private static final int COLOR_BG        = Color.parseColor("#121212");
+    private static final int COLOR_SURFACE   = Color.parseColor("#2A2A3E");
+    private static final int COLOR_PRIMARY   = Color.parseColor("#7C3AED");
+    private static final int COLOR_SECONDARY = Color.parseColor("#9D4EDD");
+    private static final int COLOR_TEXT      = Color.parseColor("#E2E8F0");
+    private static final int COLOR_TEXT_SEC  = Color.parseColor("#94A3B8");
+    private static final int COLOR_SUCCESS   = Color.parseColor("#22C55E");
+    private static final int COLOR_ERROR     = Color.parseColor("#EF4444");
+    private static final int COLOR_WARNING   = Color.parseColor("#F59E0B");
+
+    // ── UI References ──────────────────────────────────────────────
     private TextView serverStatusText;
     private TextView portText;
     private TextView requestCountText;
     private TextView activeAuthsText;
     private TextView totalTokensText;
     private TextView providersText;
+
+    /** Colored dot drawn on the server-status line. */
+    private ViewGroup statusDot;
 
     @Nullable
     @Override
@@ -37,8 +54,8 @@ public class DashboardFragment extends Fragment {
         scrollView.setLayoutParams(new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
-        scrollView.setPadding(16, 16, 16, 16);
-        scrollView.setBackgroundColor(Color.parseColor("#1E1E2E"));
+        scrollView.setPadding(20, 20, 20, 20);
+        scrollView.setBackgroundColor(COLOR_BG);
 
         LinearLayout root = new LinearLayout(requireContext());
         root.setLayoutParams(new LinearLayout.LayoutParams(
@@ -46,25 +63,24 @@ public class DashboardFragment extends Fragment {
                 ViewGroup.LayoutParams.WRAP_CONTENT));
         root.setOrientation(LinearLayout.VERTICAL);
 
-        // 标题
+        // ── Header ─────────────────────────────────────────────────
         root.addView(createTitle("Dashboard"));
 
-        // 服务器状态卡片
+        // ── Server Status Card ──────────────────────────────────────
+        statusDot = new LinearLayout(requireContext());
         serverStatusText = new TextView(requireContext());
         portText = new TextView(requireContext());
-        root.addView(createCard("服务器状态",
-                serverStatusText, portText));
+        root.addView(createServerStatusCard());
 
-        // 统计卡片
+        // ── Quick Stats Cards (row of 3) ────────────────────────────
         requestCountText = new TextView(requireContext());
         activeAuthsText = new TextView(requireContext());
         totalTokensText = new TextView(requireContext());
-        root.addView(createCard("统计概览",
-                requestCountText, activeAuthsText, totalTokensText));
+        root.addView(createStatsRow());
 
-        // 提供商卡片
+        // ── Providers Overview Card ─────────────────────────────────
         providersText = new TextView(requireContext());
-        root.addView(createCard("已配置提供商", providersText));
+        root.addView(createProvidersCard());
 
         scrollView.addView(root);
         return scrollView;
@@ -76,37 +92,190 @@ public class DashboardFragment extends Fragment {
         refreshData();
     }
 
+    // =================================================================
+    //  Data refresh
+    // =================================================================
+
     private void refreshData() {
         ConfigManager config = ConfigManager.getInstance();
         AuthManager authManager = AuthManager.getInstance();
 
-        setText(serverStatusText, "服务器状态: 运行中", "#22C55E");
-        setText(portText, "端口: " + config.getInt("port", 8317), "#A6ADC8");
-        setText(requestCountText, "今日请求: 0", "#CDD6F4");
-        setText(activeAuthsText, "活跃账号: " + authManager.getActiveCount(), "#CDD6F4");
-        setText(totalTokensText, "总 Token 消耗: 0", "#CDD6F4");
+        // Server status – always "running" for now; the dot and text
+        // reflect the actual state.
+        boolean isRunning = true;
+        setStatusDotColor(isRunning ? COLOR_SUCCESS : COLOR_ERROR);
+        setText(serverStatusText, isRunning ? "Running" : "Stopped",
+                isRunning ? COLOR_SUCCESS : COLOR_ERROR);
+        setText(portText, "Port: " + config.getInt("port", 8317),
+                COLOR_TEXT_SEC);
+
+        // Quick stats
+        setText(requestCountText, "0", COLOR_TEXT);
+        setText(activeAuthsText, String.valueOf(authManager.getActiveCount()),
+                COLOR_TEXT);
+        setText(totalTokensText, "0", COLOR_TEXT);
+
+        // Providers
         int total = authManager.getTotalCount();
-        setText(providersText, total > 0 ? "已配置 " + total + " 个凭证" : "暂无配置", "#A6ADC8");
+        setText(providersText, total > 0 ? total + " configured" : "No providers configured",
+                total > 0 ? COLOR_TEXT : COLOR_TEXT_SEC);
     }
 
+    // =================================================================
+    //  View builders
+    // =================================================================
+
+    /** Page title. */
     private TextView createTitle(String text) {
         TextView tv = new TextView(requireContext());
         tv.setText(text);
-        tv.setTextSize(24);
-        tv.setTextColor(Color.parseColor("#F5C2E7"));
+        tv.setTextSize(26);
+        tv.setTextColor(COLOR_TEXT);
         tv.setTypeface(null, android.graphics.Typeface.BOLD);
-        tv.setPadding(0, 0, 0, 16);
+        tv.setPadding(0, 0, 0, 20);
         return tv;
     }
 
-    private CardView createCard(String title, TextView... lines) {
+    // ── Server Status Card ───────────────────────────────────────────
+
+    private CardView createServerStatusCard() {
+        CardView card = baseCard();
+
+        LinearLayout content = new LinearLayout(requireContext());
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(20, 20, 20, 20);
+
+        // Section header with icon-style accent bar
+        content.addView(sectionHeader("Server Status"));
+
+        // Status row: dot + "Running"/"Stopped"
+        LinearLayout statusRow = new LinearLayout(requireContext());
+        statusRow.setOrientation(LinearLayout.HORIZONTAL);
+        statusRow.setGravity(Gravity.CENTER_VERTICAL);
+        statusRow.setPadding(0, 8, 0, 8);
+
+        // Colored dot
+        GradientDrawable dotShape = new GradientDrawable();
+        dotShape.setShape(GradientDrawable.OVAL);
+        dotShape.setSize(14, 14);
+        dotShape.setColor(COLOR_SUCCESS);
+        statusDot.setLayoutParams(new LinearLayout.LayoutParams(14, 14));
+        statusDot.setBackground(dotShape);
+
+        LinearLayout.LayoutParams dotMargin = new LinearLayout.LayoutParams(14, 14);
+        dotMargin.setMargins(0, 0, 10, 0);
+        statusDot.setLayoutParams(dotMargin);
+
+        // server-status label
+        serverStatusText.setTextSize(18);
+        serverStatusText.setTypeface(null, android.graphics.Typeface.BOLD);
+        serverStatusText.setTextColor(COLOR_SUCCESS);
+
+        statusRow.addView(statusDot);
+        statusRow.addView(serverStatusText);
+
+        content.addView(statusRow);
+
+        // Port line
+        portText.setTextSize(14);
+        portText.setTextColor(COLOR_TEXT_SEC);
+        portText.setPadding(0, 2, 0, 0);
+        content.addView(portText);
+
+        card.addView(content);
+        return card;
+    }
+
+    // ── Quick Stats Row (3 mini-cards) ───────────────────────────────
+
+    private LinearLayout createStatsRow() {
+        LinearLayout row = new LinearLayout(requireContext());
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+        // margin bottom handled by last child's padding
+
+        int margin = 6;
+        row.addView(makeStatCard("Requests\nToday", requestCountText, margin, true));
+        row.addView(makeStatCard("Tokens\nToday", totalTokensText, margin, false));
+        row.addView(makeStatCard("Active\nAuths", activeAuthsText, margin, false));
+
+        row.setPadding(0, 0, 0, 12);
+        return row;
+    }
+
+    private CardView makeStatCard(String label, TextView valueView,
+                                  int margin, boolean isFirst) {
+        CardView card = new CardView(requireContext());
+        card.setCardBackgroundColor(COLOR_SURFACE);
+        card.setRadius(14);
+        card.setCardElevation(0);
+        card.setUseCompatPadding(false);
+
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        lp.setMargins(isFirst ? 0 : margin, 0, margin, 0);
+        card.setLayoutParams(lp);
+
+        LinearLayout inner = new LinearLayout(requireContext());
+        inner.setOrientation(LinearLayout.VERTICAL);
+        inner.setGravity(Gravity.CENTER);
+        inner.setPadding(12, 16, 12, 16);
+
+        // Value
+        valueView.setTextSize(24);
+        valueView.setTypeface(null, android.graphics.Typeface.BOLD);
+        valueView.setTextColor(COLOR_TEXT);
+        valueView.setGravity(Gravity.CENTER);
+        inner.addView(valueView);
+
+        // Label
+        TextView labelView = new TextView(requireContext());
+        labelView.setText(label);
+        labelView.setTextSize(11);
+        labelView.setTextColor(COLOR_TEXT_SEC);
+        labelView.setGravity(Gravity.CENTER);
+        labelView.setPadding(0, 4, 0, 0);
+        inner.addView(labelView);
+
+        card.addView(inner);
+        return card;
+    }
+
+    // ── Providers Overview Card ──────────────────────────────────────
+
+    private CardView createProvidersCard() {
+        CardView card = baseCard();
+
+        LinearLayout content = new LinearLayout(requireContext());
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(20, 20, 20, 20);
+
+        content.addView(sectionHeader("Providers Overview"));
+
+        providersText.setTextSize(15);
+        providersText.setTextColor(COLOR_TEXT);
+        providersText.setPadding(0, 8, 0, 0);
+        content.addView(providersText);
+
+        card.addView(content);
+        return card;
+    }
+
+    // =================================================================
+    //  Shared helpers
+    // =================================================================
+
+    /** Base card with MD3 surface styling. */
+    private CardView baseCard() {
         CardView card = new CardView(requireContext());
         card.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
-        card.setCardBackgroundColor(Color.parseColor("#313244"));
-        card.setRadius(12);
-        card.setCardElevation(4);
+        card.setCardBackgroundColor(COLOR_SURFACE);
+        card.setRadius(16);
+        card.setCardElevation(0);
         card.setUseCompatPadding(true);
 
         LinearLayout.LayoutParams marginParams = new LinearLayout.LayoutParams(
@@ -114,33 +283,53 @@ public class DashboardFragment extends Fragment {
                 ViewGroup.LayoutParams.WRAP_CONTENT);
         marginParams.setMargins(0, 0, 0, 12);
         card.setLayoutParams(marginParams);
-
-        LinearLayout content = new LinearLayout(requireContext());
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(16, 16, 16, 16);
-
-        TextView titleView = new TextView(requireContext());
-        titleView.setText(title);
-        titleView.setTextSize(18);
-        titleView.setTextColor(Color.parseColor("#3B82F6"));
-        titleView.setTypeface(null, android.graphics.Typeface.BOLD);
-        titleView.setPadding(0, 0, 0, 8);
-        content.addView(titleView);
-
-        for (TextView line : lines) {
-            line.setTextSize(16);
-            line.setPadding(0, 2, 0, 2);
-            content.addView(line);
-        }
-
-        card.addView(content);
         return card;
     }
 
-    private void setText(TextView tv, String text, String color) {
+    /** Section header with an accent underline. */
+    private LinearLayout sectionHeader(String title) {
+        LinearLayout wrapper = new LinearLayout(requireContext());
+        wrapper.setOrientation(LinearLayout.VERTICAL);
+
+        TextView tv = new TextView(requireContext());
+        tv.setText(title);
+        tv.setTextSize(16);
+        tv.setTextColor(COLOR_SECONDARY);
+        tv.setTypeface(null, android.graphics.Typeface.BOLD);
+        wrapper.addView(tv);
+
+        // Accent bar (thin line below title)
+        ViewGroup bar = new ViewGroup(requireContext()) {
+            @Override
+            protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                // no-op; drawable-only view
+            }
+        };
+        bar.setLayoutParams(new LinearLayout.LayoutParams(40, 3));
+        bar.setPadding(0, 4, 0, 8);
+
+        GradientDrawable line = new GradientDrawable();
+        line.setShape(GradientDrawable.RECTANGLE);
+        line.setCornerRadius(2);
+        line.setColor(COLOR_PRIMARY);
+        bar.setBackground(line);
+
+        wrapper.addView(bar);
+        return wrapper;
+    }
+
+    /** Update the status dot colour. */
+    private void setStatusDotColor(int color) {
+        if (statusDot != null && statusDot.getBackground() instanceof GradientDrawable) {
+            ((GradientDrawable) statusDot.getBackground()).setColor(color);
+        }
+    }
+
+    /** Set text and colour on a TextView. */
+    private void setText(TextView tv, String text, int color) {
         if (tv != null) {
             tv.setText(text);
-            tv.setTextColor(Color.parseColor(color));
+            tv.setTextColor(color);
         }
     }
 }

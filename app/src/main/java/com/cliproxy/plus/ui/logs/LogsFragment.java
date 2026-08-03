@@ -2,6 +2,7 @@ package com.cliproxy.plus.ui.logs;
 
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -36,27 +37,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * LogsFragment - Real-time log viewer with color-coded levels, filtering, auto-scroll, and clear.
  * <p>
  * Features:
- * - Scrollable log list with color-coded levels (debug=gray, info=blue, warn=yellow, error=red)
+ * - Scrollable log list with color-coded levels (debug=gray, info=success, warn=amber, error=red)
  * - Auto-scroll toggle to follow new logs
  * - Clear button to wipe the log buffer
  * - Filter input for searching/filtering logs by text
+ * - Card-based Material Design 3 dark theme layout
  * - Reads logcat output filtered by the app's package name
  * - Allows in-app components to push logs via LogBuffer.push()
  */
 public class LogsFragment extends Fragment {
 
-    // ── Theme colors matching project dark theme ──
-    private static final String COLOR_BG = "#1E1E2E";
+    // ── Material Design 3 Dark Theme Colors ──
+    private static final String COLOR_BG = "#121212";
+    private static final String COLOR_SURFACE = "#2A2A3E";
     private static final String COLOR_PRIMARY = "#7C3AED";
-    private static final String COLOR_TEXT = "#CDD6F4";
-    private static final String COLOR_TEXT_SECONDARY = "#A6ADC8";
-    private static final String COLOR_SURFACE = "#313244";
-    private static final String COLOR_BORDER = "#45475A";
-
-    // ── Log level colors ──
-    private static final String COLOR_DEBUG = "#A6ADC8";
-    private static final String COLOR_INFO = "#3B82F6";
-    private static final String COLOR_WARN = "#F59E0B";
+    private static final String COLOR_SECONDARY = "#9D4EDD";
+    private static final String COLOR_TEXT_PRIMARY = "#E2E8F0";
+    private static final String COLOR_TEXT_SECONDARY = "#94A3B8";
+    private static final String COLOR_SUCCESS = "#22C55E";
+    private static final String COLOR_WARNING = "#F59E0B";
     private static final String COLOR_ERROR = "#EF4444";
 
     // ── UI Components ──
@@ -121,6 +120,31 @@ public class LogsFragment extends Fragment {
     public static void w(String tag, String message) { push("WARN", tag, message); }
     public static void e(String tag, String message) { push("ERROR", tag, message); }
 
+    // ── Drawable Helpers ──
+
+    /**
+     * Create a rounded rectangle drawable for card backgrounds.
+     */
+    private GradientDrawable makeRoundedBg(int color, float radiusPx) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setShape(GradientDrawable.RECTANGLE);
+        drawable.setCornerRadius(radiusPx);
+        drawable.setColor(color);
+        return drawable;
+    }
+
+    /**
+     * Create a rounded rectangle drawable with a stroke border.
+     */
+    private GradientDrawable makeRoundedBgWithBorder(int fillColor, int strokeColor, float strokeWidthPx, float radiusPx) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setShape(GradientDrawable.RECTANGLE);
+        drawable.setCornerRadius(radiusPx);
+        drawable.setColor(fillColor);
+        drawable.setStroke((int) strokeWidthPx, strokeColor);
+        return drawable;
+    }
+
     // ── Lifecycle ──
 
     @Nullable
@@ -134,10 +158,10 @@ public class LogsFragment extends Fragment {
                 ViewGroup.LayoutParams.MATCH_PARENT));
         rootLayout.setOrientation(LinearLayout.VERTICAL);
         rootLayout.setBackgroundColor(Color.parseColor(COLOR_BG));
-        rootLayout.setPadding(12, 12, 12, 12);
+        rootLayout.setPadding(16, 16, 16, 16);
 
-        buildToolbar();
-        buildLogArea();
+        buildToolbarCard();
+        buildLogAreaCard();
         buildStatusBar();
 
         // Initial status
@@ -162,26 +186,49 @@ public class LogsFragment extends Fragment {
 
     // ── UI Builders ──
 
-    private void buildToolbar() {
-        // Top bar: filter + auto-scroll + clear
-        LinearLayout toolbar = new LinearLayout(requireContext());
-        toolbar.setLayoutParams(new LinearLayout.LayoutParams(
+    private void buildToolbarCard() {
+        // Outer card container for the toolbar
+        LinearLayout toolbarCard = new LinearLayout(requireContext());
+        toolbarCard.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
-        toolbar.setOrientation(LinearLayout.HORIZONTAL);
-        toolbar.setGravity(Gravity.CENTER_VERTICAL);
-        toolbar.setPadding(0, 0, 0, 8);
+        toolbarCard.setOrientation(LinearLayout.VERTICAL);
+        toolbarCard.setBackground(makeRoundedBg(Color.parseColor(COLOR_SURFACE), 16f));
+        toolbarCard.setPadding(12, 12, 12, 12);
+        toolbarCard.setElevation(4f);
 
-        // Filter input
+        // Title label
+        TextView titleLabel = new TextView(requireContext());
+        titleLabel.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+        titleLabel.setText("Log Viewer");
+        titleLabel.setTextColor(Color.parseColor(COLOR_TEXT_PRIMARY));
+        titleLabel.setTextSize(15);
+        titleLabel.setTypeface(null, Typeface.BOLD);
+        titleLabel.setPadding(4, 0, 0, 10);
+
+        // Top row: filter + auto-scroll + clear
+        LinearLayout toolbarRow = new LinearLayout(requireContext());
+        toolbarRow.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+        toolbarRow.setOrientation(LinearLayout.HORIZONTAL);
+        toolbarRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        // Filter input with rounded background
         filterInput = new EditText(requireContext());
         LinearLayout.LayoutParams filterParams = new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f);
         filterInput.setLayoutParams(filterParams);
         filterInput.setHint("Filter logs...");
-        filterInput.setTextColor(Color.parseColor(COLOR_TEXT));
+        filterInput.setTextColor(Color.parseColor(COLOR_TEXT_PRIMARY));
         filterInput.setHintTextColor(Color.parseColor(COLOR_TEXT_SECONDARY));
-        filterInput.setBackgroundColor(Color.parseColor(COLOR_SURFACE));
-        filterInput.setPadding(12, 8, 12, 8);
+        filterInput.setBackground(makeRoundedBgWithBorder(
+                Color.parseColor("#1E1E2E"),
+                Color.parseColor("#3A3A4E"),
+                1.5f, 12f));
+        filterInput.setPadding(14, 10, 14, 10);
         filterInput.setTextSize(14);
         filterInput.setSingleLine(true);
         filterInput.addTextChangedListener(new TextWatcher() {
@@ -198,8 +245,13 @@ public class LogsFragment extends Fragment {
 
         // Auto-scroll toggle
         autoScrollToggle = new CheckBox(requireContext());
+        LinearLayout.LayoutParams toggleParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        toggleParams.setMarginStart(8);
+        autoScrollToggle.setLayoutParams(toggleParams);
         autoScrollToggle.setText("Auto");
-        autoScrollToggle.setTextColor(Color.parseColor(COLOR_PRIMARY));
+        autoScrollToggle.setTextColor(Color.parseColor(COLOR_TEXT_PRIMARY));
         autoScrollToggle.setTextSize(13);
         autoScrollToggle.setChecked(true);
         autoScrollToggle.setPadding(8, 0, 4, 0);
@@ -213,14 +265,20 @@ public class LogsFragment extends Fragment {
             }
         });
 
-        // Clear button
+        // Clear button with rounded background
         clearButton = new Button(requireContext());
+        LinearLayout.LayoutParams clearParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        clearParams.setMarginStart(8);
+        clearButton.setLayoutParams(clearParams);
         clearButton.setText("Clear");
-        clearButton.setTextColor(Color.parseColor(COLOR_TEXT));
-        clearButton.setBackgroundColor(Color.parseColor(COLOR_SURFACE));
+        clearButton.setTextColor(Color.parseColor(COLOR_TEXT_PRIMARY));
+        clearButton.setBackground(makeRoundedBg(Color.parseColor("#EF4444"), 10f));
         clearButton.setTextSize(13);
-        clearButton.setPadding(12, 6, 12, 6);
+        clearButton.setPadding(16, 8, 16, 8);
         clearButton.setTypeface(null, Typeface.BOLD);
+        clearButton.setElevation(2f);
         clearButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -234,18 +292,49 @@ public class LogsFragment extends Fragment {
             }
         });
 
-        toolbar.addView(filterInput);
-        toolbar.addView(autoScrollToggle);
-        toolbar.addView(clearButton);
-        rootLayout.addView(toolbar);
+        toolbarRow.addView(filterInput);
+        toolbarRow.addView(autoScrollToggle);
+        toolbarRow.addView(clearButton);
+
+        toolbarCard.addView(titleLabel);
+        toolbarCard.addView(toolbarRow);
+        rootLayout.addView(toolbarCard);
+
+        // Add spacing between cards
+        View spacer = new View(requireContext());
+        spacer.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 12));
+        rootLayout.addView(spacer);
     }
 
-    private void buildLogArea() {
+    private void buildLogAreaCard() {
+        // Outer card container for the log area
+        LinearLayout logCard = new LinearLayout(requireContext());
+        logCard.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0, 1.0f));
+        logCard.setOrientation(LinearLayout.VERTICAL);
+        logCard.setBackground(makeRoundedBg(Color.parseColor(COLOR_SURFACE), 16f));
+        logCard.setPadding(0, 0, 0, 0);
+        logCard.setElevation(4f);
+
+        // Log area header
+        TextView logHeader = new TextView(requireContext());
+        logHeader.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+        logHeader.setText("Log Output");
+        logHeader.setTextColor(Color.parseColor(COLOR_TEXT_SECONDARY));
+        logHeader.setTextSize(12);
+        logHeader.setTypeface(null, Typeface.BOLD);
+        logHeader.setPadding(14, 12, 14, 6);
+
+        // ScrollView for log content
         logScrollView = new ScrollView(requireContext());
         logScrollView.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 0, 1.0f));
-        logScrollView.setBackgroundColor(Color.parseColor(COLOR_SURFACE));
+        logScrollView.setBackgroundColor(Color.parseColor("#1A1A2A"));
         logScrollView.setPadding(0, 0, 0, 0);
 
         // Wrap in HorizontalScrollView so long lines don't get clipped
@@ -254,29 +343,121 @@ public class LogsFragment extends Fragment {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
         hScroll.setHorizontalScrollBarEnabled(true);
+        hScroll.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
 
         logContainer = new LinearLayout(requireContext());
         logContainer.setLayoutParams(new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
         logContainer.setOrientation(LinearLayout.VERTICAL);
-        logContainer.setPadding(8, 8, 8, 8);
+        logContainer.setPadding(12, 8, 12, 8);
 
         hScroll.addView(logContainer);
         logScrollView.addView(hScroll);
-        rootLayout.addView(logScrollView);
+        logCard.addView(logHeader);
+        logCard.addView(logScrollView);
+
+        // Bottom rounded corners for the inner log area
+        GradientDrawable innerBg = new GradientDrawable();
+        innerBg.setShape(GradientDrawable.RECTANGLE);
+        innerBg.setCornerRadii(new float[]{
+                0f, 0f, 0f, 0f,
+                16f, 16f, 16f, 16f
+        });
+        innerBg.setColor(Color.parseColor("#1A1A2A"));
+        logScrollView.setBackground(innerBg);
+
+        rootLayout.addView(logCard);
     }
 
     private void buildStatusBar() {
-        statusText = new TextView(requireContext());
-        statusText.setLayoutParams(new LinearLayout.LayoutParams(
+        // Card container for status bar
+        LinearLayout statusCard = new LinearLayout(requireContext());
+        statusCard.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
+        statusCard.setOrientation(LinearLayout.HORIZONTAL);
+        statusCard.setBackground(makeRoundedBg(Color.parseColor(COLOR_SURFACE), 16f));
+        statusCard.setPadding(14, 10, 14, 10);
+        statusCard.setElevation(4f);
+        statusCard.setGravity(Gravity.CENTER_VERTICAL);
+
+        // Add spacing above status bar
+        View spacer = new View(requireContext());
+        spacer.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 12));
+        rootLayout.addView(spacer);
+
+        // Status indicator dot
+        View statusDot = new View(requireContext());
+        LinearLayout.LayoutParams dotParams = new LinearLayout.LayoutParams(8, 8);
+        dotParams.setMarginEnd(8);
+        statusDot.setLayoutParams(dotParams);
+        GradientDrawable dotBg = new GradientDrawable();
+        dotBg.setShape(GradientDrawable.OVAL);
+        dotBg.setColor(Color.parseColor(COLOR_SUCCESS));
+        statusDot.setBackground(dotBg);
+
+        // Status text
+        statusText = new TextView(requireContext());
+        statusText.setLayoutParams(new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         statusText.setTextColor(Color.parseColor(COLOR_TEXT_SECONDARY));
         statusText.setTextSize(12);
-        statusText.setPadding(4, 6, 4, 2);
-        statusText.setGravity(Gravity.CENTER_HORIZONTAL);
-        rootLayout.addView(statusText);
+        statusText.setTypeface(null, Typeface.NORMAL);
+
+        // Level legend
+        LinearLayout legendLayout = new LinearLayout(requireContext());
+        legendLayout.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+        legendLayout.setOrientation(LinearLayout.HORIZONTAL);
+        legendLayout.setGravity(Gravity.CENTER_VERTICAL);
+
+        legendLayout.addView(makeLegendItem("D", Color.parseColor(COLOR_TEXT_SECONDARY)));
+        legendLayout.addView(makeLegendItem("I", Color.parseColor(COLOR_SUCCESS)));
+        legendLayout.addView(makeLegendItem("W", Color.parseColor(COLOR_WARNING)));
+        legendLayout.addView(makeLegendItem("E", Color.parseColor(COLOR_ERROR)));
+
+        statusCard.addView(statusDot);
+        statusCard.addView(statusText);
+        statusCard.addView(legendLayout);
+        rootLayout.addView(statusCard);
+    }
+
+    /**
+     * Create a small colored level badge for the legend.
+     */
+    private View makeLegendItem(String label, int color) {
+        LinearLayout item = new LinearLayout(requireContext());
+        LinearLayout.LayoutParams itemParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        itemParams.setMarginStart(8);
+        item.setLayoutParams(itemParams);
+        item.setOrientation(LinearLayout.HORIZONTAL);
+        item.setGravity(Gravity.CENTER_VERTICAL);
+
+        // Colored dot
+        View dot = new View(requireContext());
+        LinearLayout.LayoutParams dotParams = new LinearLayout.LayoutParams(6, 6);
+        dotParams.setMarginEnd(3);
+        dot.setLayoutParams(dotParams);
+        GradientDrawable dotBg = new GradientDrawable();
+        dotBg.setShape(GradientDrawable.OVAL);
+        dotBg.setColor(color);
+        dot.setBackground(dotBg);
+
+        // Label
+        TextView labelView = new TextView(requireContext());
+        labelView.setText(label);
+        labelView.setTextColor(color);
+        labelView.setTextSize(10);
+        labelView.setTypeface(null, Typeface.BOLD);
+
+        item.addView(dot);
+        item.addView(labelView);
+        return item;
     }
 
     // ── Log Rendering ──
@@ -345,10 +526,11 @@ public class LogsFragment extends Fragment {
         line.setLayoutParams(new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
-        line.setPadding(0, 1, 0, 1);
+        line.setPadding(0, 2, 0, 2);
         line.setTextSize(11);
         line.setTypeface(Typeface.MONOSPACE);
         line.setSingleLine(false);
+        line.setLineSpacing(2f, 1f);
 
         // Format: [HH:mm:ss] LEVEL/TAG: message
         String time = new SimpleDateFormat("HH:mm:ss", Locale.US)
@@ -356,22 +538,22 @@ public class LogsFragment extends Fragment {
         line.setText(String.format(Locale.US, "[%s] %s/%s: %s",
                 time, entry.level, entry.tag, entry.message));
 
-        // Color by level
+        // Color by level using the new theme colors
         switch (entry.level) {
             case "DEBUG":
-                line.setTextColor(Color.parseColor(COLOR_DEBUG));
+                line.setTextColor(Color.parseColor(COLOR_TEXT_SECONDARY));
                 break;
             case "INFO":
-                line.setTextColor(Color.parseColor(COLOR_INFO));
+                line.setTextColor(Color.parseColor(COLOR_SUCCESS));
                 break;
             case "WARN":
-                line.setTextColor(Color.parseColor(COLOR_WARN));
+                line.setTextColor(Color.parseColor(COLOR_WARNING));
                 break;
             case "ERROR":
                 line.setTextColor(Color.parseColor(COLOR_ERROR));
                 break;
             default:
-                line.setTextColor(Color.parseColor(COLOR_TEXT));
+                line.setTextColor(Color.parseColor(COLOR_TEXT_PRIMARY));
                 break;
         }
 

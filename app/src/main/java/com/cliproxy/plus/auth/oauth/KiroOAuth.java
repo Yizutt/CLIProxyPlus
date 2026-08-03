@@ -107,7 +107,6 @@ public class KiroOAuth extends OAuthProvider {
      * @return 包含授权 URL 和 CompletableFuture 的 OAuthFlow 对象
      * @throws OAuthException 如果启动流程失败
      */
-    @Override
     public AuthResult startAuth() throws OAuthException {
         log("Starting Kiro OAuth flow (Google OAuth default)");
         try {
@@ -131,7 +130,6 @@ public class KiroOAuth extends OAuthProvider {
      * @return 新的 Token 数据
      * @throws OAuthException 如果刷新失败
      */
-    @Override
     public TokenData refreshTokens(String refreshToken) throws OAuthException {
         if (refreshToken == null || refreshToken.trim().isEmpty()) {
             throw new OAuthException("refresh_token_required", "Refresh token is required");

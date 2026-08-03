@@ -90,7 +90,6 @@ public class KiloOAuth extends OAuthProvider {
      * @return 包含 Token 数据的 AuthResult
      * @throws OAuthException 如果设备码请求失败或用户授权超时
      */
-    @Override
     public AuthResult startAuth() throws OAuthException {
         try {
             // 1. 请求设备码
@@ -200,7 +199,6 @@ public class KiloOAuth extends OAuthProvider {
      * @return 新的 Token 数据
      * @throws OAuthException 如果刷新失败
      */
-    @Override
     public TokenData refreshTokens(String refreshToken) throws OAuthException {
         if (refreshToken == null || refreshToken.trim().isEmpty()) {
             throw new OAuthException("refresh_token_required",

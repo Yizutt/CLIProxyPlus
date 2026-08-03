@@ -119,7 +119,6 @@ public class QoderOAuth extends OAuthProvider {
      * @return 用户验证 URI（verification_uri_complete），用户应在浏览器中打开此 URL
      * @throws RuntimeException 如果设备码请求失败
      */
-    @Override
     public String startAuth() {
         try {
             DeviceFlowRequest request = initiateDeviceFlow();
@@ -155,7 +154,6 @@ public class QoderOAuth extends OAuthProvider {
      * @param state 授权状态标识（由 {@link #startAuth()} 生成）
      * @return true 如果用户已完成授权且令牌已就绪，false 表示仍需等待
      */
-    @Override
     public boolean pollAuthStatus(String state) {
         DeviceFlowSession session = activeSessions.get(state);
         if (session == null) {
@@ -202,7 +200,6 @@ public class QoderOAuth extends OAuthProvider {
      * @param state 状态参数（由 {@link #startAuth()} 生成，用于 CSRF 验证）
      * @return 认证结果，如果会话无效或令牌未就绪则返回 null
      */
-    @Override
     public AuthResult handleCallback(String code, String state) {
         DeviceFlowSession session = activeSessions.remove(state);
         if (session == null || session.tokenResult == null) {
@@ -259,7 +256,6 @@ public class QoderOAuth extends OAuthProvider {
      * @return 新的 Token 数据
      * @throws OAuthException 如果刷新请求失败
      */
-    @Override
     public TokenData refreshTokens(String refreshToken) throws OAuthException {
         if (refreshToken == null || refreshToken.trim().isEmpty()) {
             throw new OAuthException("refresh_token_required",

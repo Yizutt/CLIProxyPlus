@@ -296,7 +296,6 @@ public class IFlowOAuth extends OAuthProvider {
      * @return 新的 Token 数据
      * @throws OAuthException 如果刷新失败
      */
-    @Override
     public TokenData refreshTokens(String refreshToken) throws OAuthException {
         if (refreshToken == null || refreshToken.trim().isEmpty()) {
             throw new OAuthException("refresh_token_required", "Refresh token is required");

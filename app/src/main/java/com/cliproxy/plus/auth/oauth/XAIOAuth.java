@@ -103,7 +103,6 @@ public class XAIOAuth extends OAuthProvider {
      * @return 包含 API Key 信息的认证结果
      * @throws OAuthException 如果未配置 API Key 或验证失败
      */
-    @Override
     public AuthResult startAuth() throws OAuthException {
         log("Starting xAI OAuth flow (API Key validation)");
 
@@ -141,7 +140,6 @@ public class XAIOAuth extends OAuthProvider {
      * @return 新的 Token 数据（包含当前 API Key）
      * @throws OAuthException 如果 API Key 无效或未配置
      */
-    @Override
     public TokenData refreshTokens(String refreshToken) throws OAuthException {
         String apiKey = cachedApiKey;
         if (apiKey == null || apiKey.trim().isEmpty()) {

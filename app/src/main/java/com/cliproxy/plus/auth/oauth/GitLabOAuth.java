@@ -167,7 +167,6 @@ public class GitLabOAuth extends OAuthProvider {
      * @return 包含 Token 数据的 AuthResult
      * @throws OAuthException 如果启动流程或令牌交换失败
      */
-    @Override
     public AuthResult startAuth() throws OAuthException {
         // 如果已配置 PAT，优先使用 PAT 直接认证
         if (cachedPat != null && !cachedPat.trim().isEmpty()) {
@@ -238,7 +237,6 @@ public class GitLabOAuth extends OAuthProvider {
      * @return 新的 Token 数据
      * @throws OAuthException 如果刷新失败
      */
-    @Override
     public TokenData refreshTokens(String refreshToken) throws OAuthException {
         // 如果使用 PAT 模式
         if (refreshToken == null || refreshToken.trim().isEmpty()) {

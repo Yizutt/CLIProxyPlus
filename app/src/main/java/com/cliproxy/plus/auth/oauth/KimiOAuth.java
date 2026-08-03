@@ -116,7 +116,6 @@ public class KimiOAuth extends OAuthProvider {
      * @return 用户验证 URI（verification_uri_complete），用户应在浏览器中打开此 URL
      * @throws RuntimeException 如果设备码请求失败
      */
-    @Override
     public String startAuth() {
         try {
             String state = UUID.randomUUID().toString();

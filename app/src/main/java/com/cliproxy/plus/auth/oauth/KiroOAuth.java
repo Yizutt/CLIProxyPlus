@@ -2147,11 +2147,14 @@ public class KiroOAuth extends OAuthProvider {
 
             // 尝试无填充解码
             try {
-                byte[] decoded = Base64.getUrlDecoder().withoutPadding().decode(parts[1]);
-                String jsonStr = new String(decoded, StandardCharsets.UTF_8);
-                JSONObject json = parseJson(jsonStr);
-                if (json.has("email")) {
-                    return json.optString("email", "");
+                String[] altParts = accessToken.split("\\.");
+                if (altParts.length >= 2) {
+                    byte[] decoded = Base64.getUrlDecoder().withoutPadding().decode(altParts[1]);
+                    String jsonStr = new String(decoded, StandardCharsets.UTF_8);
+                    JSONObject json = parseJson(jsonStr);
+                    if (json.has("email")) {
+                        return json.optString("email", "");
+                    }
                 }
             } catch (Exception ignored) {
             }

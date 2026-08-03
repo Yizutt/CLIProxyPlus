@@ -74,7 +74,7 @@ public class ConfigFragment extends Fragment {
         configContentText = new TextView(requireContext());
         configContentText.setTextSize(13);
         configContentText.setTextColor(Color.parseColor("#CDD6F4"));
-        configContentText.setTypeface(null, android.graphics.android.graphics.Typeface.MONOSPACE);
+        configContentText.setTypeface(null, android.graphics.Typeface.MONOSPACE);
         configContentText.setPadding(0, 0, 0, 0);
 
         CardView configCard = createCard("配置内容", configContentText);
@@ -97,7 +97,7 @@ public class ConfigFragment extends Fragment {
         tv.setText(text);
         tv.setTextSize(24);
         tv.setTextColor(Color.parseColor("#F5C2E7"));
-        tv.setTypeface(null, android.graphics.android.graphics.Typeface.BOLD);
+        tv.setTypeface(null, android.graphics.Typeface.BOLD);
         tv.setPadding(0, 0, 0, 16);
         return tv;
     }
@@ -183,7 +183,7 @@ public class ConfigFragment extends Fragment {
         titleView.setText(title);
         titleView.setTextSize(18);
         titleView.setTextColor(Color.parseColor("#7C3AED"));
-        titleView.setTypeface(null, android.graphics.android.graphics.Typeface.BOLD);
+        titleView.setTypeface(null, android.graphics.Typeface.BOLD);
         titleView.setPadding(0, 0, 0, 8);
         content.addView(titleView);
 
@@ -232,7 +232,7 @@ public class ConfigFragment extends Fragment {
         editorInput.setBackgroundColor(Color.parseColor("#1E1E2E"));
         editorInput.setPadding(12, 12, 12, 12);
         editorInput.setTextSize(12);
-        editorInput.setTypeface(null, android.graphics.android.graphics.Typeface.MONOSPACE);
+        editorInput.setTypeface(null, android.graphics.Typeface.MONOSPACE);
         editorInput.setGravity(Gravity.TOP);
         editorInput.setMinLines(16);
         editorInput.setMaxLines(24);
@@ -399,7 +399,7 @@ public class ConfigFragment extends Fragment {
         if (statusText != null) {
             statusText.setText(text);
             statusText.setTextColor(Color.parseColor(color));
-            statusText.setTypeface(null, android.graphics.android.graphics.Typeface.BOLD);
+            statusText.setTypeface(null, android.graphics.Typeface.BOLD);
         }
     }
 

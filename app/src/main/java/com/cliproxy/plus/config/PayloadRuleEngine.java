@@ -7,7 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
@@ -601,7 +601,7 @@ public class PayloadRuleEngine {
         row1.addView(toggleBtn);
 
         // 删除按钮
-        ImageButton deleteBtn = new ImageButton(context);
+        Button deleteBtn = new Button(context);
         deleteBtn.setText("X");
         deleteBtn.setBackgroundColor(Color.TRANSPARENT);
         deleteBtn.setPadding(8, 4, 8, 4);

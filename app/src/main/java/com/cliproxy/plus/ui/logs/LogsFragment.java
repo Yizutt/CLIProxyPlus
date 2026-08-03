@@ -125,7 +125,7 @@ public class LogsFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
+    public View onCreateView(@NonNull android.view.LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         rootLayout = new LinearLayout(requireContext());

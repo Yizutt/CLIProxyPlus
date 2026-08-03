@@ -39,7 +39,6 @@ jobs:
         run: |
           cd cliproxy-server
           CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ../android-app/app/src/main/assets/cliproxy-server ./cmd/server/
-          ls -la ../android-app/app/src/main/assets/cliproxy-server
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -62,7 +61,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android-app/**/*.gradle*', 'android-app/**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
@@ -71,15 +70,19 @@ jobs:
         run: echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > ${{ env.KEYSTORE_PATH }}
 
       - name: Generate Gradle wrapper
+        working-directory: android-app
         run: gradle wrapper
 
       - name: Grant execute permission for gradlew
+        working-directory: android-app
         run: chmod +x gradlew
 
       - name: Build debug APK
+        working-directory: android-app
         run: ./gradlew assembleDebug
 
       - name: Build signed release APK
+        working-directory: android-app
         if: ${{ env.KEYSTORE_PASSWORD != '' }}
         run: ./gradlew assembleRelease
 
@@ -87,11 +90,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload signed release APK
         if: ${{ env.KEYSTORE_PASSWORD != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: app-release-signed
-          path: app/build/outputs/apk/release/app-release.apk
+          path: android-app/app/build/outputs/apk/release/app-release.apk

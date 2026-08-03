@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="nav_color">#CDD6F4</color>
     <color name="nav_active">#7C3AED</color>
     <color name="colorPrimary">#7C3AED</color>
     <color name="colorPrimaryVariant">#6D28D9</color>

@@ -94,7 +94,7 @@ public class ServerManager {
             monitorThread = new Thread(() -> {
                 try {
                     BufferedReader reader = new BufferedReader(
-                            new FileReader(serverProcess.getInputStream()));
+                            new java.io.InputStreamReader(serverProcess.getInputStream()));
                     String line;
                     while ((line = reader.readLine()) != null) {
                         Log.d(TAG, "[server] " + line);

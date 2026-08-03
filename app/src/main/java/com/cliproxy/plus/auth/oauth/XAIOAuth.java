@@ -264,7 +264,7 @@ public class XAIOAuth {
      */
     public Discovery discover() throws IOException, OAuthProvider.OAuthException {
         String responseBody = doGet(DISCOVERY_URL);
-        JSONObject json = new JSONObject(responseBody);
+        JSONObject json = parseJson(responseBody);
 
         String deviceAuthorizationEndpoint = json.optString("device_authorization_endpoint", "");
         String tokenEndpoint = json.optString("token_endpoint", "");
@@ -310,7 +310,7 @@ public class XAIOAuth {
         form.put("scope", SCOPE);
 
         String responseBody = doPostForm(deviceAuthorizationEndpoint, form);
-        JSONObject json = new JSONObject(responseBody);
+        JSONObject json = parseJson(responseBody);
 
         DeviceCodeResponse deviceCode = new DeviceCodeResponse();
         deviceCode.deviceCode = json.optString("device_code", "");
@@ -488,7 +488,7 @@ public class XAIOAuth {
                 int responseCode = conn.getResponseCode();
                 String responseBody = readResponse(conn, responseCode);
 
-                JSONObject json = new JSONObject(responseBody);
+                JSONObject json = parseJson(responseBody);
 
                 String errorStr = json.optString("error", "");
                 String errorDescription = json.optString("error_description", "");
@@ -648,7 +648,7 @@ public class XAIOAuth {
     private TokenData postTokenForm(String tokenEndpoint, Map<String, String> form)
             throws IOException, OAuthProvider.OAuthException {
         String responseBody = doPostForm(tokenEndpoint, form);
-        JSONObject json = new JSONObject(responseBody);
+        JSONObject json = parseJson(responseBody);
 
         String accessToken = json.optString("access_token", "");
         String refreshToken = json.optString("refresh_token", "");

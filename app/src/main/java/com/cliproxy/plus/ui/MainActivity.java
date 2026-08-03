@@ -2,6 +2,7 @@ package com.cliproxy.plus.ui;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -29,66 +30,116 @@ import com.cliproxy.plus.ui.agent.AgentFragment;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * CLIProxy Plus 主界面 - 底部导航 + 页面切换
+ * 复刻原版 Web 面板的深色紫罗兰风格
+ */
 public class MainActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager;
     private ViewPagerAdapter adapter;
     private LinearLayout bottomNav;
-    private final String[] tabNames = {"Dashboard", "Config", "Auth", "API Keys", "OAuth", "Usage", "Logs", "Agent"};
-    private final List<TextView> tabViews = new ArrayList<>();
     private int activeTab = 0;
+
+    private static final String[] TAB_NAMES = {
+        "Dashboard", "Config", "Auth", "Keys", "OAuth", "Usage", "Logs", "Agent"
+    };
+    private static final String[] TAB_ICONS = {
+        "\u2302", "\u2699", "\uD83D\uDD11", "\uD83D\uDDDD", "\uD83D\uDD12", "\uD83D\uDCCA", "\uD83D\uDCDD", "\uD83E\uDD16"
+    };
+    private static final int[] TAB_COLORS = {
+        0xFF7C3AED, 0xFF3B82F6, 0xFF22C55E, 0xFFF59E0B, 0xFFEF4444, 0xFF06B6D4, 0xFF8B5CF6, 0xFFEC4899
+    };
+
+    private final List<TextView> tabLabels = new ArrayList<>();
+    private final List<TextView> tabIcons = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // 初始化 ConfigManager
         ConfigManager.getInstance(this);
 
-        // 纯 Java 构建 UI
         LinearLayout root = new LinearLayout(this);
         root.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.parseColor("#1E1E2E"));
+        root.setBackgroundColor(0xFF1E1E2E);
+
+        // 顶部状态栏
+        LinearLayout topBar = new LinearLayout(this);
+        topBar.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(52)));
+        topBar.setOrientation(LinearLayout.HORIZONTAL);
+        topBar.setGravity(Gravity.CENTER_VERTICAL);
+        topBar.setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8));
+        topBar.setBackgroundColor(0xFF7C3AED);
+
+        TextView title = new TextView(this);
+        title.setText("CLIProxy Plus");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(18);
+        title.setTypeface(null, Typeface.BOLD);
+        topBar.addView(title);
+
+        TextView statusDot = new TextView(this);
+        statusDot.setText("\u25CF");
+        statusDot.setTextColor(0xFF22C55E);
+        statusDot.setTextSize(10);
+        statusDot.setPadding(dpToPx(8), 0, 0, 0);
+        topBar.addView(statusDot);
+
+        TextView versionText = new TextView(this);
+        versionText.setText("v6.9.45");
+        versionText.setTextColor(0xCCFFFFFF);
+        versionText.setTextSize(12);
+        versionText.setPadding(dpToPx(8), dpToPx(2), 0, 0);
+        topBar.addView(versionText);
+
+        root.addView(topBar);
 
         // ViewPager2
         viewPager = new ViewPager2(this);
         viewPager.setLayoutParams(new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                0, 1f));
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         viewPager.setId(android.R.id.content);
 
-        // BottomNavigationView 替换为纯 LinearLayout
+        // 底部导航栏
         bottomNav = new LinearLayout(this);
         bottomNav.setLayoutParams(new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                dpToPx(56)));
+                ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(64)));
         bottomNav.setOrientation(LinearLayout.HORIZONTAL);
-        bottomNav.setBackgroundColor(Color.parseColor("#313244"));
-        bottomNav.setGravity(Gravity.CENTER);
+        bottomNav.setBackgroundColor(0xFF1E1E2E);
 
-        // 创建 Tab 按钮
-        for (int i = 0; i < tabNames.length; i++) {
+        for (int i = 0; i < TAB_NAMES.length; i++) {
             final int index = i;
-            TextView tab = new TextView(this);
-            LinearLayout.LayoutParams tabParams = new LinearLayout.LayoutParams(
-                    0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
-            tab.setLayoutParams(tabParams);
-            tab.setText(tabNames[i]);
-            tab.setTextSize(10);
-            tab.setGravity(Gravity.CENTER);
-            tab.setTextColor(Color.parseColor("#A6ADC8"));
-            tab.setPadding(2, 4, 2, 4);
-            tab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    selectTab(index);
-                }
-            });
-            tabViews.add(tab);
-            bottomNav.addView(tab);
+            LinearLayout tabItem = new LinearLayout(this);
+            tabItem.setLayoutParams(new LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
+            tabItem.setOrientation(LinearLayout.VERTICAL);
+            tabItem.setGravity(Gravity.CENTER);
+            tabItem.setPadding(0, dpToPx(4), 0, dpToPx(4));
+            tabItem.setBackgroundColor(0xFF1E1E2E);
+            tabItem.setClickable(true);
+            tabItem.setOnClickListener(v -> selectTab(index));
+
+            TextView iconView = new TextView(this);
+            iconView.setText(TAB_ICONS[i]);
+            iconView.setTextSize(18);
+            iconView.setGravity(Gravity.CENTER);
+            iconView.setTextColor(0xFFA6ADC8);
+
+            TextView labelView = new TextView(this);
+            labelView.setText(TAB_NAMES[i]);
+            labelView.setTextSize(9);
+            labelView.setGravity(Gravity.CENTER);
+            labelView.setTextColor(0xFFA6ADC8);
+
+            tabItem.addView(iconView);
+            tabItem.addView(labelView);
+            tabIcons.add(iconView);
+            tabLabels.add(labelView);
+            bottomNav.addView(tabItem);
         }
 
         root.addView(viewPager);
@@ -97,8 +148,6 @@ public class MainActivity extends AppCompatActivity {
 
         setupViewPager();
         selectTab(0);
-
-        // 启动服务
         startProxyService();
     }
 
@@ -112,36 +161,22 @@ public class MainActivity extends AppCompatActivity {
         adapter.addFragment(new UsageFragment());
         adapter.addFragment(new LogsFragment());
         adapter.addFragment(new AgentFragment());
-
         viewPager.setAdapter(adapter);
         viewPager.setOffscreenPageLimit(1);
-
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
-            @Override
-            public void onPageSelected(int position) {
-                super.onPageSelected(position);
-                selectTab(position);
-            }
+            @Override public void onPageSelected(int position) { selectTab(position); }
         });
     }
 
     private void selectTab(int index) {
         activeTab = index;
         viewPager.setCurrentItem(index, false);
-        for (int i = 0; i < tabViews.size(); i++) {
-            if (i == index) {
-                tabViews.get(i).setTextColor(Color.parseColor("#7C3AED"));
-                tabViews.get(i).setTypeface(null, android.graphics.Typeface.BOLD);
-            } else {
-                tabViews.get(i).setTextColor(Color.parseColor("#A6ADC8"));
-                tabViews.get(i).setTypeface(null, android.graphics.Typeface.NORMAL);
-            }
+        for (int i = 0; i < tabIcons.size(); i++) {
+            int color = (i == index) ? TAB_COLORS[i] : 0xFFA6ADC8;
+            tabIcons.get(i).setTextColor(color);
+            tabLabels.get(i).setTextColor(color);
+            tabLabels.get(i).setTypeface(null, (i == index) ? Typeface.BOLD : Typeface.NORMAL);
         }
-    }
-
-    private int dpToPx(int dp) {
-        float density = getResources().getDisplayMetrics().density;
-        return Math.round(dp * density);
     }
 
     private void startProxyService() {
@@ -154,25 +189,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+
     static class ViewPagerAdapter extends FragmentStateAdapter {
         private final List<Fragment> fragments = new ArrayList<>();
-
-        public ViewPagerAdapter(MainActivity activity) {
-            super(activity);
-        }
-
-        public void addFragment(Fragment fragment) {
-            fragments.add(fragment);
-        }
-
-        @Override
-        public Fragment createFragment(int position) {
-            return fragments.get(position);
-        }
-
-        @Override
-        public int getItemCount() {
-            return fragments.size();
-        }
+        public ViewPagerAdapter(MainActivity a) { super(a); }
+        public void addFragment(Fragment f) { fragments.add(f); }
+        @Override public Fragment createFragment(int p) { return fragments.get(p); }
+        @Override public int getItemCount() { return fragments.size(); }
     }
 }

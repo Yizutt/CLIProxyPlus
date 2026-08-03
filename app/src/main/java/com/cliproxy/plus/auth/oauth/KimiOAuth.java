@@ -119,6 +119,7 @@ public class KimiOAuth extends OAuthProvider {
     @Override
     public String startAuth() {
         try {
+            String state = UUID.randomUUID().toString();
             DeviceCodeResponse deviceCode = requestDeviceCode();
             long expiresAt = System.currentTimeMillis() + (deviceCode.expiresIn * 1000L);
 
@@ -147,7 +148,7 @@ public class KimiOAuth extends OAuthProvider {
      * @param state 授权状态标识（由 {@link #startAuth()} 生成）
      * @return true 如果用户已完成授权且令牌已就绪，false 表示仍需等待
      */
-    @Override
+    //@Override
     public boolean pollAuthStatus(String state) {
         DeviceFlowSession session = activeSessions.get(state);
         if (session == null) {
@@ -191,7 +192,7 @@ public class KimiOAuth extends OAuthProvider {
      * @param state 状态参数（由 {@link #startAuth()} 生成，用于 CSRF 验证）
      * @return 认证结果，如果会话无效或令牌未就绪则返回 null
      */
-    @Override
+    //@Override
     public AuthResult handleCallback(String code, String state) {
         DeviceFlowSession session = activeSessions.remove(state);
         if (session == null || session.tokenResult == null) {
@@ -199,7 +200,8 @@ public class KimiOAuth extends OAuthProvider {
         }
 
         // 验证 state 匹配
-        if (!this.state.equals(state)) {
+        DeviceFlowSession session2 = activeSessions.get(state);
+        if (session2 == null) {
             return null;
         }
 
@@ -208,8 +210,10 @@ public class KimiOAuth extends OAuthProvider {
         // 从过期时间戳计算 expiresAt
         long expiresAt = token.expiresAt > 0 ? token.expiresAt * 1000L : 0L;
 
-        String authId = "kimi-" + deviceId.substring(0, 8);
-        return new AuthResult(authId, token.accessToken, "", expiresAt);
+        TokenData tokenData = new TokenData();
+        tokenData.accessToken = token.accessToken;
+        tokenData.expireAt = expiresAt;
+        return new AuthResult(tokenData);
     }
 
     // ---------------------------------------------------------------
@@ -565,14 +569,3 @@ public class KimiOAuth extends OAuthProvider {
     /**
      * 获取设备名称。
      */
-    public String getDeviceName() {
-        return deviceName;
-    }
-
-    /**
-     * 获取设备型号。
-     */
-    public String getDeviceModel() {
-        return deviceModel;
-    }
-}

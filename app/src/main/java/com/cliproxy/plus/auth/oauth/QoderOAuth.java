@@ -705,17 +705,6 @@ public class QoderOAuth extends OAuthProvider {
     /**
      * 获取设备型号。
      */
-    public String getDeviceModel() {
-        return deviceModel;
-    }
-
-    // ---------------------------------------------------------------
-    // 内部类型
-    // ---------------------------------------------------------------
-
-    /**
-     * 设备流请求信息。
-     */
     private static class DeviceFlowRequest {
         final String codeVerifier;
         final String codeChallenge;

@@ -3,6 +3,8 @@ package com.cliproxy.plus.ui.dashboard;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -14,6 +16,7 @@ import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 
+import com.cliproxy.plus.management.ManagementAPIClient;
 import com.cliproxy.plus.auth.AuthManager;
 import com.cliproxy.plus.config.ConfigManager;
 
@@ -99,25 +102,24 @@ public class DashboardFragment extends Fragment {
     private void refreshData() {
         ConfigManager config = ConfigManager.getInstance();
         AuthManager authManager = AuthManager.getInstance();
+        ManagementAPIClient api = new ManagementAPIClient("http://127.0.0.1:" + config.getInt("port", 8317));
 
-        // Server status – always "running" for now; the dot and text
-        // reflect the actual state.
-        boolean isRunning = true;
-        setStatusDotColor(isRunning ? COLOR_SUCCESS : COLOR_ERROR);
-        setText(serverStatusText, isRunning ? "Running" : "Stopped",
-                isRunning ? COLOR_SUCCESS : COLOR_ERROR);
-        setText(portText, "Port: " + config.getInt("port", 8317),
-                COLOR_TEXT_SEC);
+        new Thread(() -> {
+            final boolean alive = api.isHealthy();
+            new Handler(Looper.getMainLooper()).post(() -> {
+                setStatusDotColor(alive ? COLOR_SUCCESS : COLOR_ERROR);
+                setText(serverStatusText, alive ? "运行中" : "已停止",
+                        alive ? COLOR_SUCCESS : COLOR_ERROR);
+            });
+        }).start();
 
-        // Quick stats
+        setText(portText, "端口: " + config.getInt("port", 8317), COLOR_TEXT_SEC);
         setText(requestCountText, "0", COLOR_TEXT);
-        setText(activeAuthsText, String.valueOf(authManager.getActiveCount()),
-                COLOR_TEXT);
+        setText(activeAuthsText, String.valueOf(authManager.getActiveCount()), COLOR_TEXT);
         setText(totalTokensText, "0", COLOR_TEXT);
 
-        // Providers
         int total = authManager.getTotalCount();
-        setText(providersText, total > 0 ? total + " configured" : "\u5C1A\u672A\u914D\u7F6E\u63D0\u4F9B\u5546",
+        setText(providersText, total > 0 ? total + " 个提供商已配置" : "尚未配置提供商",
                 total > 0 ? COLOR_TEXT : COLOR_TEXT_SEC);
     }
 

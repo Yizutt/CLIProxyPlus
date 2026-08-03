@@ -16,8 +16,8 @@ import com.cliproxy.plus.R;
 import com.cliproxy.plus.ui.MainActivity;
 
 /**
- * ProxyService - 前台服务，保持代理服务器在后台运行
- * 对应原版 server 的后台常驻模式
+ * ProxyService - 管理 Go 服务器进程的生命周期
+ * 使用 ServerManager 启动/停止 rootfs 中的 cliproxy-server
  */
 public class ProxyService extends Service {
 
@@ -25,13 +25,13 @@ public class ProxyService extends Service {
     private static final String CHANNEL_ID = "cliproxy_server";
     private static final int NOTIFICATION_ID = 8317;
 
-    private ProxyServer proxyServer;
-    private boolean isRunning = false;
+    private ServerManager serverManager;
 
     @Override
     public void onCreate() {
         super.onCreate();
         createNotificationChannel();
+        serverManager = new ServerManager(this);
     }
 
     @Override
@@ -51,7 +51,10 @@ public class ProxyService extends Service {
     }
 
     private void startProxy() {
-        if (isRunning) return;
+        if (serverManager.isRunning()) {
+            updateNotification("服务器运行中 (端口: " + serverManager.getPort() + ")");
+            return;
+        }
 
         Intent notificationIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -61,7 +64,7 @@ public class ProxyService extends Service {
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("CLIProxy Plus")
-                .setContentText("代理服务器运行中...")
+                .setContentText("正在启动服务器...")
                 .setSmallIcon(android.R.drawable.ic_menu_share)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
@@ -69,18 +72,16 @@ public class ProxyService extends Service {
 
         startForeground(NOTIFICATION_ID, notification);
 
-        proxyServer = new ProxyServer();
-        if (proxyServer.startServer()) {
-            isRunning = true;
-            updateNotification("代理服务器运行中 (端口: " + proxyServer.getPort() + ")");
+        if (serverManager.startServer()) {
+            updateNotification("服务器运行中 (端口: " + serverManager.getPort() + ")");
+        } else {
+            updateNotification("服务器启动失败");
         }
     }
 
     private void stopProxy() {
-        if (proxyServer != null) {
-            proxyServer.stopServer();
-        }
-        isRunning = false;
+        serverManager.stopServer();
+        updateNotification("服务器已停止");
         stopForeground(true);
         stopSelf();
     }
@@ -101,10 +102,8 @@ public class ProxyService extends Service {
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "CLIProxy Server",
-                    NotificationManager.IMPORTANCE_LOW
-            );
+                    CHANNEL_ID, "CLIProxy Server",
+                    NotificationManager.IMPORTANCE_LOW);
             channel.setDescription("CLIProxy Plus 代理服务器通知");
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
@@ -121,15 +120,11 @@ public class ProxyService extends Service {
 
     @Override
     public void onDestroy() {
-        stopProxy();
+        serverManager.stopServer();
         super.onDestroy();
     }
 
-    public boolean isRunning() {
-        return isRunning;
-    }
-
-    public ProxyServer getProxyServer() {
-        return proxyServer;
+    public ServerManager getServerManager() {
+        return serverManager;
     }
 }

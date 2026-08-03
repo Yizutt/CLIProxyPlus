@@ -371,33 +371,8 @@ public class AgentFragment extends Fragment {
     // ===================== Agent Response Generation =====================
 
     private String generateAgentResponse(String userMessage) {
-        // Simple rule-based responses for demo
-        String lower = userMessage.toLowerCase();
-
-        if (lower.contains("你好") || lower.contains("hello") || lower.contains("hi")) {
-            return "你好！我是 AI 助手，可以帮你管理代理配置、查看状态、处理 API 请求等。有什么需要帮忙的吗？";
-        }
-        if (lower.contains("帮助") || lower.contains("help") || lower.contains("功能")) {
-            return "我可以帮你：\n1. 查看和管理代理配置\n2. 监控服务器状态\n3. 管理 API 凭证\n4. 查看使用统计\n5. 处理 OAuth 授权\n\n请问你想了解哪方面？";
-        }
-        if (lower.contains("状态") || lower.contains("status") || lower.contains("运行")) {
-            return "当前服务器状态：运行中\n端口：8317\n活跃请求：0\n内存使用：正常\n\n更多详情请查看 Dashboard 页面。";
-        }
-        if (lower.contains("配置") || lower.contains("config") || lower.contains("设置")) {
-            return "代理配置管理：\n- 端口配置：默认 8317\n- 超时设置：30 秒\n- 重试次数：3 次\n- 日志级别：INFO\n\n你可以在 Config 页面修改这些设置。";
-        }
-        if (lower.contains("api") || lower.contains("密钥") || lower.contains("key") || lower.contains("凭证")) {
-            return "API 凭证管理：\n目前支持多种 AI 提供商的 API 密钥管理。你可以在 API Keys 页面添加、查看或删除凭证。\n\n请确保妥善保管你的 API 密钥。";
-        }
-        if (lower.contains("谢谢") || lower.contains("thank")) {
-            return "不客气！如果还有其他问题，随时问我。";
-        }
-        if (lower.contains("天气") || lower.contains("weather")) {
-            return "抱歉，我目前没有联网查询天气的能力。你可以检查网络连接或使用其他工具获取天气信息。";
-        }
-
-        // Default response
-        return "收到你的消息：「" + userMessage + "」\n\n我还在学习如何更好地回答这个问题。请尝试更具体的描述，或者输入「帮助」查看我能提供的功能。";
+        return "Please configure an AI model in the Agent settings (\u2699) to enable intelligent responses. "
+             + "You need to provide an API endpoint, API key, and model name.";
     }
 
     // ===================== Chat Adapter =====================

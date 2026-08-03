@@ -115,47 +115,13 @@ public class UsageFragment extends Fragment {
 
     private void refreshData() {
         Log.d(TAG, "Refreshing usage data...");
-        loadSampleData();
+        // 等待实际数据源接入
     }
 
     /**
      * 用模拟数据填充 UI，后续可替换为从 ConfigManager / 统计文件读取。
      */
-    private void loadSampleData() {
-        Random rnd = new Random();
-
-        int totalRequests = 150 + rnd.nextInt(200);
-        int totalTokens   = 50000 + rnd.nextInt(200000);
-        double successPct = 85.0 + rnd.nextDouble() * 14.0; // 85 ~ 99
-
-        // 摘要卡片 — 设置文本和颜色
-        setText(totalRequestsText,
-                String.valueOf(totalRequests), COLOR_TEXT);
-        setText(totalTokensText,
-                String.format(Locale.US, "%,d", totalTokens), COLOR_TEXT);
-        String rateColor = successPct >= 95.0 ? COLOR_SUCCESS
-                : successPct >= 85.0 ? COLOR_WARNING : COLOR_ERROR;
-        setText(successRateText,
-                String.format(Locale.US, "%.1f%%", successPct), rateColor);
-
-        // 构造模拟的模型数据
-        String[] models = {"gpt-4o", "gpt-4o-mini", "claude-3-opus", "claude-3-sonnet",
-                "gemini-2.0-flash", "deepseek-chat"};
-        JSONArray modelArray = new JSONArray();
-        for (String model : models) {
-            try {
-                JSONObject entry = new JSONObject();
-                entry.put("model", model);
-                entry.put("requests", 10 + rnd.nextInt(90));
-                entry.put("tokens", 2000 + rnd.nextInt(50000));
-                entry.put("success", 80 + rnd.nextInt(20));
-                modelArray.put(entry);
-            } catch (Exception e) {
-                Log.e(TAG, "Error building sample model entry", e);
-            }
-        }
-
-        renderModelList(modelArray);
+private void loadSampleData() {
     }
 
     /**

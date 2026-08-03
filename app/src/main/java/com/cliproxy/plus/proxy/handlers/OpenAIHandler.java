@@ -60,7 +60,8 @@ public class OpenAIHandler {
 
             // 未配置账号时返回模拟数据以便测试
             if (credential == null) {
-                return handleNoCredential(model, stream);
+                return RequestRouter.jsonResponse(503,
+                        "{\"error\":{\"message\":\"No upstream credential configured. Add an API key or OAuth login first.\"}}");
             }
 
             // 转发到上游
@@ -70,29 +71,6 @@ public class OpenAIHandler {
             Log.e(TAG, "Failed to handle chat completion", e);
             return RequestRouter.jsonResponse(500,
                     "{\"error\":{\"message\":\"Internal error: " + e.getMessage() + "\"}}");
-        }
-    }
-
-    private NanoHTTPD.Response handleNoCredential(String model, boolean stream) {
-        if (stream) {
-            String response = "data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\"," +
-                    "\"model\":\"" + model + "\",\"choices\":[{\"index\":0," +
-                    "\"delta\":{\"role\":\"assistant\"},\"finish_reason\":null}]}\n\n" +
-                    "data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\"," +
-                    "\"model\":\"" + model + "\",\"choices\":[{\"index\":0," +
-                    "\"delta\":{\"content\":\"Hello from CLIProxy Plus!\"}" +
-                    ",\"finish_reason\":null}]}\n\n" +
-                    "data: {\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion.chunk\"," +
-                    "\"model\":\"" + model + "\",\"choices\":[{\"index\":0," +
-                    "\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n" +
-                    "data: [DONE]\n\n";
-            return RequestRouter.sseResponse(response);
-        } else {
-            String response = "{\"id\":\"chatcmpl-mock\",\"object\":\"chat.completion\"," +
-                    "\"model\":\"" + model + "\",\"choices\":[{\"index\":0," +
-                    "\"message\":{\"role\":\"assistant\",\"content\":\"Hello from CLIProxy Plus! " +
-                    "No upstream configured.\"},\"finish_reason\":\"stop\"}]}";
-            return RequestRouter.jsonResponse(200, response);
         }
     }
 

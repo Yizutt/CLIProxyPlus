@@ -102,7 +102,7 @@ public class ClaudeHandler {
 
             // 未配置账号时返回模拟数据以便测试
             if (credential == null) {
-                return handleNoCredential(model, stream, requestObj);
+                return RequestRouter.jsonResponse(503, "{\"error\":{\"message\":\"No upstream credential configured. Add a Claude API key or OAuth login first.\"}}");
             }
 
             // 转发到上游
@@ -138,77 +138,6 @@ public class ClaudeHandler {
     /**
      * 未配置凭证时返回模拟响应
      */
-    private NanoHTTPD.Response handleNoCredential(String model, boolean stream, JSONObject requestObj) {
-        if (stream) {
-            // 构造模拟 SSE 流式响应（Claude 事件格式）
-            StringBuilder sb = new StringBuilder();
-
-            // message_start 事件
-            sb.append("event: message_start\n");
-            sb.append("data: {\"type\":\"message_start\",\"message\":{")
-              .append("\"id\":\"msg_mock_001\",\"type\":\"message\",\"role\":\"assistant\",")
-              .append("\"model\":\"").append(model).append("\",")
-              .append("\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,")
-              .append("\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}")
-              .append("\n\n");
-
-            // content_block_start 事件
-            sb.append("event: content_block_start\n");
-            sb.append("data: {\"type\":\"content_block_start\",\"index\":0,")
-              .append("\"content_block\":{\"type\":\"text\",\"text\":\"\"}}")
-              .append("\n\n");
-
-            // content_block_delta 事件
-            sb.append("event: content_block_delta\n");
-            sb.append("data: {\"type\":\"content_block_delta\",\"index\":0,")
-              .append("\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello from CLIProxy Plus!\"}}")
-              .append("\n\n");
-
-            // content_block_stop 事件
-            sb.append("event: content_block_stop\n");
-            sb.append("data: {\"type\":\"content_block_stop\",\"index\":0}\n\n");
-
-            // message_delta 事件
-            sb.append("event: message_delta\n");
-            sb.append("data: {\"type\":\"message_delta\",\"delta\":{")
-              .append("\"stop_reason\":\"end_turn\",\"stop_sequence\":null},")
-              .append("\"usage\":{\"output_tokens\":8}}")
-              .append("\n\n");
-
-            // message_stop 事件
-            sb.append("event: message_stop\n");
-            sb.append("data: {\"type\":\"message_stop\"}\n\n");
-
-            return RequestRouter.sseResponse(sb.toString());
-        } else {
-            // 非流式模拟响应
-            JSONObject response = new JSONObject();
-            try {
-                response.put("id", "msg_mock_001");
-                response.put("type", "message");
-                response.put("role", "assistant");
-                response.put("model", model);
-                response.put("stop_reason", "end_turn");
-                response.put("stop_sequence", JSONObject.NULL);
-
-                JSONArray content = new JSONArray();
-                JSONObject textBlock = new JSONObject();
-                textBlock.put("type", "text");
-                textBlock.put("text", "Hello from CLIProxy Plus! No upstream configured.");
-                content.put(textBlock);
-                response.put("content", content);
-
-                JSONObject usage = new JSONObject();
-                usage.put("input_tokens", 10);
-                usage.put("output_tokens", 8);
-                response.put("usage", usage);
-            } catch (Exception e) {
-                Log.w(TAG, "Failed to build mock response", e);
-            }
-            return RequestRouter.jsonResponse(200, response.toString());
-        }
-    }
-
     /**
      * 转发请求到上游 Anthropic API
      *

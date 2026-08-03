@@ -21,8 +21,6 @@ import com.cliproxy.plus.proxy.middleware.AuthMiddleware;
 public class RequestRouter {
 
     private final OpenAIHandler openAIHandler;
-    private final ClaudeHandler claudeHandler;
-    private final GeminiHandler geminiHandler;
     private final AuthMiddleware authMiddleware;
 
     // 协议识别常量
@@ -36,8 +34,6 @@ public class RequestRouter {
 
     public RequestRouter() {
         this.openAIHandler = new OpenAIHandler();
-        this.claudeHandler = new ClaudeHandler();
-        this.geminiHandler = new GeminiHandler();
         this.authMiddleware = new AuthMiddleware();
     }
 
@@ -74,11 +70,11 @@ public class RequestRouter {
 
         // 其他协议暂存
         if (uri.equals(PREFIX_CLAUDE) || uri.startsWith(PREFIX_CLAUDE + "/")) {
-            return claudeHandler.handleMessage(headers, body);
+            return jsonResponse(501, "{\"error\":\"Claude handler not yet implemented\"}");
         }
 
         if (uri.startsWith(PREFIX_GEMINI)) {
-            return geminiHandler.handleRequest(uri, headers, body);
+            return jsonResponse(501, "{\"error\":\"Gemini handler not yet implemented\"}");
         }
 
         if (uri.startsWith(PREFIX_CODEX)) {

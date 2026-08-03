@@ -303,7 +303,9 @@ public class AgentFragment extends Fragment {
                 @Override
                 public void run() {
                     try {
-                        final String response = llmClient.generateResponse(text);
+                        final String response = llmClient.generateResponse(
+                            "You are a helpful assistant for managing CLIProxy Plus proxy server. Answer concisely.",
+                            text, new java.util.ArrayList<String>());
                         new Handler(Looper.getMainLooper()).post(new Runnable() {
                             @Override
                             public void run() {
@@ -510,13 +512,11 @@ public class AgentFragment extends Fragment {
 
     private void showConfigDialog() {
         ConfigManager config = ConfigManager.getInstance();
-        JSONObject agentConfig = config.getConfig().optJSONObject("agent");
-        if (agentConfig == null) {
-            agentConfig = new JSONObject();
-        }
+        com.google.gson.JsonObject root = config.getConfig();
+        com.google.gson.JsonObject agentConfig = root.has("agent") ? root.getAsJsonObject("agent") : new com.google.gson.JsonObject();
 
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
-        builder.setTitle("AI Agent 配置");
+        builder.setTitle("AI Agent \u914D\u7F6E");
 
         LinearLayout layout = new LinearLayout(requireContext());
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -524,7 +524,7 @@ public class AgentFragment extends Fragment {
 
         // 端点
         TextView endpointLabel = new TextView(requireContext());
-        endpointLabel.setText("API 端点");
+        endpointLabel.setText("API \u7AEF\u70B9");
         endpointLabel.setTextColor(Color.parseColor("#CDD6F4"));
         endpointLabel.setTextSize(14);
         endpointLabel.setPadding(0, 0, 0, 4);
@@ -532,19 +532,12 @@ public class AgentFragment extends Fragment {
 
         EditText endpointInput = new EditText(requireContext());
         endpointInput.setHint("https://api.openai.com/v1");
-        endpointInput.setText(agentConfig.optString("custom_endpoint", ""));
+        String ep = agentConfig.has("custom_endpoint") ? agentConfig.get("custom_endpoint").getAsString() : "";
+        endpointInput.setText(ep);
         endpointInput.setTextColor(Color.parseColor("#CDD6F4"));
         endpointInput.setHintTextColor(Color.parseColor("#6B7280"));
         endpointInput.setBackgroundColor(Color.parseColor("#313244"));
         endpointInput.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
-        android.view.ViewGroup.MarginLayoutParams epMargins = (android.view.ViewGroup.MarginLayoutParams) endpointInput.getLayoutParams();
-        if (epMargins == null) {
-            epMargins = new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT);
-        }
-        epMargins.setMargins(0, 0, 0, dpToPx(12));
-        endpointInput.setLayoutParams(epMargins);
         layout.addView(endpointInput);
 
         // API Key
@@ -557,24 +550,17 @@ public class AgentFragment extends Fragment {
 
         EditText keyInput = new EditText(requireContext());
         keyInput.setHint("sk-...");
-        keyInput.setText(agentConfig.optString("custom_api_key", ""));
+        String ak = agentConfig.has("custom_api_key") ? agentConfig.get("custom_api_key").getAsString() : "";
+        keyInput.setText(ak);
         keyInput.setTextColor(Color.parseColor("#CDD6F4"));
         keyInput.setHintTextColor(Color.parseColor("#6B7280"));
         keyInput.setBackgroundColor(Color.parseColor("#313244"));
         keyInput.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
-        android.view.ViewGroup.MarginLayoutParams keyMargins = (android.view.ViewGroup.MarginLayoutParams) keyInput.getLayoutParams();
-        if (keyMargins == null) {
-            keyMargins = new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT);
-        }
-        keyMargins.setMargins(0, 0, 0, dpToPx(12));
-        keyInput.setLayoutParams(keyMargins);
         layout.addView(keyInput);
 
         // 模型
         TextView modelLabel = new TextView(requireContext());
-        modelLabel.setText("模型名称");
+        modelLabel.setText("\u6A21\u578B\u540D\u79F0");
         modelLabel.setTextColor(Color.parseColor("#CDD6F4"));
         modelLabel.setTextSize(14);
         modelLabel.setPadding(0, 0, 0, 4);
@@ -582,7 +568,8 @@ public class AgentFragment extends Fragment {
 
         EditText modelInput = new EditText(requireContext());
         modelInput.setHint("gpt-4, claude-sonnet, gemini-pro...");
-        modelInput.setText(agentConfig.optString("custom_model", ""));
+        String md = agentConfig.has("custom_model") ? agentConfig.get("custom_model").getAsString() : "";
+        modelInput.setText(md);
         modelInput.setTextColor(Color.parseColor("#CDD6F4"));
         modelInput.setHintTextColor(Color.parseColor("#6B7280"));
         modelInput.setBackgroundColor(Color.parseColor("#313244"));
@@ -590,34 +577,31 @@ public class AgentFragment extends Fragment {
         layout.addView(modelInput);
 
         builder.setView(layout);
-        builder.setPositiveButton("保存", new android.content.DialogInterface.OnClickListener() {
+        builder.setPositiveButton("\u4FDD\u5B58", new android.content.DialogInterface.OnClickListener() {
             @Override
             public void onClick(android.content.DialogInterface dialog, int which) {
-                try {
-                    JSONObject agent = new JSONObject();
-                    agent.put("custom_endpoint", endpointInput.getText().toString().trim());
-                    agent.put("custom_api_key", keyInput.getText().toString().trim());
-                    agent.put("custom_model", modelInput.getText().toString().trim());
-                    config.getConfig().put("agent", agent);
-                    config.saveConfig();
-                    initLLMClient();
-                    Toast.makeText(requireContext(), "配置已保存", Toast.LENGTH_SHORT).show();
-                } catch (JSONException e) {
-                    Log.e(TAG, "Failed to save config", e);
-                }
+                com.google.gson.JsonObject agent = new com.google.gson.JsonObject();
+                agent.addProperty("custom_endpoint", endpointInput.getText().toString().trim());
+                agent.addProperty("custom_api_key", keyInput.getText().toString().trim());
+                agent.addProperty("custom_model", modelInput.getText().toString().trim());
+                root.add("agent", agent);
+                config.saveConfig();
+                initLLMClient();
+                Toast.makeText(requireContext(), "\u914D\u7F6E\u5DF2\u4FDD\u5B58", Toast.LENGTH_SHORT).show();
             }
         });
-        builder.setNegativeButton("取消", null);
+        builder.setNegativeButton("\u53D6\u6D88", null);
         builder.show();
     }
 
     private void initLLMClient() {
         ConfigManager config = ConfigManager.getInstance();
-        JSONObject agentConfig = config.getConfig().optJSONObject("agent");
-        if (agentConfig != null) {
-            String endpoint = agentConfig.optString("custom_endpoint", "");
-            String apiKey = agentConfig.optString("custom_api_key", "");
-            String model = agentConfig.optString("custom_model", "");
+        com.google.gson.JsonObject root = config.getConfig();
+        if (root.has("agent")) {
+            com.google.gson.JsonObject agentConfig = root.getAsJsonObject("agent");
+            String endpoint = agentConfig.has("custom_endpoint") ? agentConfig.get("custom_endpoint").getAsString() : "";
+            String apiKey = agentConfig.has("custom_api_key") ? agentConfig.get("custom_api_key").getAsString() : "";
+            String model = agentConfig.has("custom_model") ? agentConfig.get("custom_model").getAsString() : "";
             if (!endpoint.isEmpty() && !apiKey.isEmpty()) {
                 llmClient = new CustomLLMClient(endpoint, apiKey, model);
                 Log.i(TAG, "LLM client initialized: " + endpoint + " / " + model);

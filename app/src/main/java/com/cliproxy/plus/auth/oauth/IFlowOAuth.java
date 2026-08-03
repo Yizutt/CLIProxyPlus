@@ -17,6 +17,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -489,7 +490,8 @@ public class IFlowOAuth extends OAuthProvider {
      * @return the complete authorization URL
      */
     public String generateAuthURL(String state) {
-        return generateAuthURL(state, CALLBACK_PORT);
+        String[] result = generateAuthURL(state, CALLBACK_PORT);
+        return result != null && result.length > 0 ? result[0] : "";
     }
 
     /**

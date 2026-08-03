@@ -593,7 +593,7 @@ public class QoderOAuth extends OAuthProvider {
 
             String responseBody = httpPostJson(QODER_REFRESH_TOKEN_ENDPOINT, bodyStr, accessToken);
 
-            JSONObject json = new JSONObject(responseBody);
+            JSONObject json = parseJson(responseBody);
             String token = json.optString("token", "");
             if (token.isEmpty()) {
                 throw new OAuthException(OAuthException.TYPE_PROVIDER_ERROR,
@@ -653,7 +653,7 @@ public class QoderOAuth extends OAuthProvider {
         try {
             String responseBody = httpGet(QODER_USER_INFO_ENDPOINT, accessToken);
 
-            JSONObject json = new JSONObject(responseBody);
+            JSONObject json = parseJson(responseBody);
             UserInfoResponse response = new UserInfoResponse();
             response.id = json.optString("id", "");
             response.name = json.optString("name", "");
@@ -860,4 +860,12 @@ public class QoderOAuth extends OAuthProvider {
         }
         return null;
     }
+    private static JSONObject parseJson(String body) throws IOException {
+        try {
+            return new JSONObject(body);
+        } catch (org.json.JSONException e) {
+            throw new IOException("qoder: failed to parse JSON", e);
+        }
+    }
+
 }

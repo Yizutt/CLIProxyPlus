@@ -202,7 +202,7 @@ public class LogsFragment extends Fragment {
         titleLabel.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
-        titleLabel.setText("Log Viewer");
+        titleLabel.setText("\u65E5\u5FD7\u67E5\u770B");
         titleLabel.setTextColor(Color.parseColor(COLOR_TEXT_PRIMARY));
         titleLabel.setTextSize(15);
         titleLabel.setTypeface(null, Typeface.BOLD);
@@ -323,7 +323,7 @@ public class LogsFragment extends Fragment {
         logHeader.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
-        logHeader.setText("Log Output");
+        logHeader.setText("\u65E5\u5FD7\u8F93\u51FA");
         logHeader.setTextColor(Color.parseColor(COLOR_TEXT_SECONDARY));
         logHeader.setTextSize(12);
         logHeader.setTypeface(null, Typeface.BOLD);

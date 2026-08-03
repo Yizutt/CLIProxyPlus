@@ -117,7 +117,7 @@ public class DashboardFragment extends Fragment {
 
         // Providers
         int total = authManager.getTotalCount();
-        setText(providersText, total > 0 ? total + " configured" : "No providers configured",
+        setText(providersText, total > 0 ? total + " configured" : "\u5C1A\u672A\u914D\u7F6E\u63D0\u4F9B\u5546",
                 total > 0 ? COLOR_TEXT : COLOR_TEXT_SEC);
     }
 
@@ -146,7 +146,7 @@ public class DashboardFragment extends Fragment {
         content.setPadding(20, 20, 20, 20);
 
         // Section header with icon-style accent bar
-        content.addView(sectionHeader("Server Status"));
+        content.addView(sectionHeader("\u670D\u52A1\u5668\u72B6\u6001"));
 
         // Status row: dot + "Running"/"Stopped"
         LinearLayout statusRow = new LinearLayout(requireContext());

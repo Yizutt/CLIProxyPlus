@@ -371,8 +371,8 @@ public class AgentFragment extends Fragment {
     // ===================== Agent Response Generation =====================
 
     private String generateAgentResponse(String userMessage) {
-        return "Please configure an AI model in the Agent settings (\u2699) to enable intelligent responses. "
-             + "You need to provide an API endpoint, API key, and model name.";
+        return "\u8BF7\u5728\u667A\u80FD\u52A9\u624B\u8BBE\u7F6E\u4E2D\u914D\u7F6E AI \u6A21\u578B (\u2699) to enable intelligent responses. "
+             + "\u9700\u8981\u63D0\u4F9B API \u7AEF\u70B9\u3001API \u5BC6\u94A5\u548C\u6A21\u578B\u540D\u79F0";
     }
 
     // ===================== Chat Adapter =====================

@@ -133,7 +133,7 @@ private void loadSampleData() {
 
         if (models == null || models.length() == 0) {
             TextView empty = new TextView(requireContext());
-            empty.setText("No model data available.");
+            empty.setText("\u6682\u65E0\u6A21\u578B\u6570\u636E");
             empty.setTextColor(Color.parseColor(COLOR_TEXT_MUTED));
             empty.setTextSize(15);
             empty.setPadding(0, 16, 0, 8);

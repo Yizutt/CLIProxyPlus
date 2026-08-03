@@ -66,14 +66,14 @@ public class MainActivity extends AppCompatActivity {
         ConfigManager.getInstance(this);
 
         // 导航项
-        navItems.add(new NavItem("\u25A0", "Dashboard", new DashboardFragment()));
-        navItems.add(new NavItem("\u2699", "Config", new ConfigFragment()));
-        navItems.add(new NavItem("\uD83D\uDD11", "Auth Files", new AuthFragment()));
-        navItems.add(new NavItem("\uD83D\uDDDD", "API Keys", new APIKeysFragment()));
+        navItems.add(new NavItem("\u25A0", "4EEA886876D8", new DashboardFragment()));
+        navItems.add(new NavItem("\u2699", "914D7F6E", new ConfigFragment()));
+        navItems.add(new NavItem("\uD83D\uDD11", "8D2653F765874EF6", new AuthFragment()));
+        navItems.add(new NavItem("\uD83D\uDDDD", "API 5BC694A5", new APIKeysFragment()));
         navItems.add(new NavItem("\uD83D\uDD12", "OAuth", new OAuthFragment()));
-        navItems.add(new NavItem("\uD83D\uDCCA", "Usage", new UsageFragment()));
-        navItems.add(new NavItem("\uD83D\uDCDD", "Logs", new LogsFragment()));
-        navItems.add(new NavItem("\uD83E\uDD16", "Agent", new AgentFragment()));
+        navItems.add(new NavItem("\uD83D\uDCCA", "752891CF", new UsageFragment()));
+        navItems.add(new NavItem("\uD83D\uDCDD", "65E55FD7", new LogsFragment()));
+        navItems.add(new NavItem("\uD83E\uDD16", "667A80FD52A9624B", new AgentFragment()));
 
         // DrawerLayout
         drawerLayout = new DrawerLayout(this);
@@ -222,7 +222,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 底部版本信息
         TextView footerText = new TextView(this);
-        footerText.setText("Build with \u2764 for Android");
+        footerText.setText("\u7531 \u2764 \u6784\u5EFA \u4E3A Android");
         footerText.setTextColor(0xFF475569);
         footerText.setTextSize(11);
         footerText.setGravity(Gravity.CENTER);

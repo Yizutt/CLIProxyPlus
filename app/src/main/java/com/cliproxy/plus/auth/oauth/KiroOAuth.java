@@ -2439,4 +2439,12 @@ public class KiroOAuth extends OAuthProvider {
         if (storage == null) return null;
         return storage.toTokenData();
     }
+    private static JSONObject parseJson(String body) throws IOException {
+        try {
+            return new JSONObject(body);
+        } catch (org.json.JSONException e) {
+            throw new IOException("kiro: failed to parse JSON", e);
+        }
+    }
+
 }

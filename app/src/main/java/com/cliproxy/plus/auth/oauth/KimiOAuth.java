@@ -700,7 +700,6 @@ public class KimiOAuth extends OAuthProvider {
     // ========================================================================
 
 
-}
     private static JSONObject parseJson(String body) throws IOException {
         try {
             return new JSONObject(body);

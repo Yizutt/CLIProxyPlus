@@ -303,7 +303,7 @@ public class KimiOAuth extends OAuthProvider {
                             + responseCode + ": " + responseBody);
                 }
 
-                JSONObject json = new JSONObject(responseBody);
+                JSONObject json = parseJson(responseBody);
                 return DeviceCodeResponse.fromJson(json);
 
             } catch (IOException e) {
@@ -414,7 +414,7 @@ public class KimiOAuth extends OAuthProvider {
                     String responseBody = readResponseBody(conn, responseCode);
 
                     // Parse response - Kimi returns 200 for both success and pending states
-                    JSONObject json = new JSONObject(responseBody);
+                    JSONObject json = parseJson(responseBody);
 
                     // Check for OAuth error field (1:1 port of Go switch statement)
                     String error = json.optString("error", "");
@@ -578,7 +578,7 @@ public class KimiOAuth extends OAuthProvider {
                             + responseCode + ": " + responseBody);
                 }
 
-                JSONObject json = new JSONObject(responseBody);
+                JSONObject json = parseJson(responseBody);
 
                 // Check for empty access token (1:1 port of Go empty check)
                 String accessToken = json.optString("access_token", "");
@@ -700,4 +700,12 @@ public class KimiOAuth extends OAuthProvider {
     // ========================================================================
 
 
+}
+    private static JSONObject parseJson(String body) throws IOException {
+        try {
+            return new JSONObject(body);
+        } catch (org.json.JSONException e) {
+            throw new IOException("kimi: failed to parse JSON response", e);
+        }
+    }
 }

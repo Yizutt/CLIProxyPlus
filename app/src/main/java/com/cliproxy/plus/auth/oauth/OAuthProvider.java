@@ -184,13 +184,5 @@ public abstract class OAuthProvider {
         public String error;
     }
 
-    // ====== Default methods (can be overridden by subclasses) ======
-
-    public AuthResult startAuth() throws OAuthException {
-        throw new OAuthException(TYPE_PROVIDER_ERROR, "startAuth not implemented");
-    }
-
-    public TokenData refreshTokens(String refreshToken) throws OAuthException {
-        throw new OAuthException(TYPE_PROVIDER_ERROR, "refreshTokens not implemented");
-    }
+    // default methods intentionally omitted - subclasses define their own
 }

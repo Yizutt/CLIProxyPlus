@@ -556,27 +556,3 @@ public class KimiOAuth extends OAuthProvider {
 
     // ---------------------------------------------------------------
     // Getter
-    // ---------------------------------------------------------------
-
-    /**
-     * 获取设备唯一标识。
-     */
-    public String getDeviceId() {
-        return deviceId;
-    }
-
-    /**
-     * 获取设备名称。
-     */
-    public String getDeviceId() {
-        return deviceId;
-    }
-
-    public String getDeviceName() {
-        return deviceName;
-    }
-
-    public String getDeviceModel() {
-        return deviceModel;
-    }
-}

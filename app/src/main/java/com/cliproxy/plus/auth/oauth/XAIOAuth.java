@@ -573,8 +573,6 @@ public class XAIOAuth {
                 conn.disconnect();
             }
 
-        } catch (OAuthProvider.OAuthException e) {
-            return new ExchangeResult(null, e, intervalMs, false);
         } catch (Exception e) {
             return new ExchangeResult(
                     null,
@@ -933,5 +931,12 @@ public class XAIOAuth {
             end--;
         }
         return (start < end) ? result.substring(start, end) : "";
+    }
+    private static JSONObject parseJson(String body) throws IOException {
+        try {
+            return new JSONObject(body);
+        } catch (org.json.JSONException e) {
+            throw new IOException("xai: failed to parse JSON response", e);
+        }
     }
 }
